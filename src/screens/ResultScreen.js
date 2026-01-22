@@ -43,7 +43,13 @@ export class ResultScreen {
       on: { click: () => this.sm.changeScreen("title") }
     });
 
-    card.append(title, sub, toLevels, toTitle);
+    const nextPuzzle = el("button", {
+              className: "btn",
+              text: "次の問題へ（同じレベル）",
+              on: { click: () => this.sm.changeScreen("game", { levelSize }) }
+            });
+
+    card.append(title, sub, toLevels, nextPuzzle, toTitle);
     wrap.appendChild(card);
 
     container.innerHTML = "";

@@ -4,6 +4,7 @@ import { loadRandomPuzzle } from "../sudoku/puzzleLoader.js";
 import { renderBoard } from "../sudoku/renderer.js";
 import { renderPad } from "../sudoku/input.js";
 import { canPlace, isCleared } from "../sudoku/engine.js";
+import { generateSolution, makePuzzleFromSolution } from "../sudoku/generator.js";
 
 export class GameScreen {
   constructor(screenManager, gameState, params = {}) {
@@ -53,19 +54,36 @@ export class GameScreen {
     
         // ---- ランダム問題ロード（Phase1の下準備） ----
         try {
-          const avoidId = this.gs.state.session.lastPuzzleId;
-          const loaded = await loadRandomPuzzle(levelSize, { avoidId });
+            const avoidId = this.gs.state.session.lastPuzzleId;
+                      const { settings } = this.gs.state;
+            
+                      let puzzle;
+                      let puzzleId;
+            
+                      if (settings.useGeneratedPuzzles) {
+                        const sol = generateSolution(levelSize);
+                        // レベルが上がるほど “穴” を少し増やす（簡易）
+                        const ratio = Math.max(0.32, 0.52 - (levelSize - 3) * 0.03);
+                        puzzle = makePuzzleFromSolution(sol, ratio);
+                        puzzleId = `gen:${levelSize}:${Date.now()}`;
+                      } else {
+                        const loaded = await loadRandomPuzzle(levelSize, { avoidId });
+                        puzzle = loaded.puzzle;
+                        puzzleId = loaded.id;
+                      }
     
           // 次回の重複回避のため保存（盤面実装後も引き続き使える）
           this.gs.setState({
-            session: { lastPuzzleId: loaded.id }
+            session: { lastPuzzleId: puzzleId }
           });
     
           status.textContent = "同じ数字は たて・よこ に入らないよ";
 
-          const grid = loaded.puzzle.grid.map((row) => [...row]);
-          const fixed = loaded.puzzle.grid.map((row) => row.map((v) => v !== 0));
+          const grid = puzzle.grid.map((row) => [...row]);
+          const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
           let selected = null;
+
+          const padWrap = el("div");
     
           const redraw = () => {
                       board.innerHTML = "";
@@ -75,32 +93,59 @@ export class GameScreen {
                           fixed,
                           onSelect: (r, c) => {
                             selected = { r, c };
+                            updatePad(); // 選択が変わったら候補更新
                           }
                         })
                       );
                     };
             
+
+                    const updatePad = () => {
+                                    const { guideMode } = this.gs.state.settings;
+                                    const disabledSet = new Set();
+                                    if (guideMode) {
+                                      if (!selected) {
+                                    // 選択してない時は全部押せない（誤操作防止）
+                                        puzzle.numbers.forEach((n) => disabledSet.add(n));
+                                        disabledSet.add(0);
+                                      } else {
+                                        const { r, c } = selected;
+                                        for (const n of puzzle.numbers) {
+                                          if (!canPlace(grid, r, c, n)) disabledSet.add(n);
+                                        }
+                                        // けす は常に許可（ガイドでもOK）
+                                      }
+                                    }
+                                    padWrap.innerHTML = "";
+                                    padWrap.appendChild(
+                                      renderPad(puzzle.numbers, onPadInput, { disabledSet })
+                                    );
+                                  };
+                        
+                                  const onPadInput = (value) => {
+                                    if (!selected) return;
+                                    const { r, c } = selected;
+                        
+                                    if (!canPlace(grid, r, c, value)) {
+                                      showToast(wrap, "そこには入らないよ");
+                                      return;
+                                    }
+                        
+                                    grid[r][c] = value;
+                                    redraw();
+                                    updatePad();
+                        
+                                    if (isCleared(grid)) {
+                                      showToast(wrap, "クリア！");
+                                      this.sm.changeScreen("result", { levelSize, cleared: true });
+                                    }
+                                  };
+
+
                     redraw();
             
-                    const pad = renderPad(loaded.puzzle.numbers, (value) => {
-                      if (!selected) return;
-                      const { r, c } = selected;
-            
-                      if (!canPlace(grid, r, c, value)) {
-                        showToast(wrap, "そこには入らないよ");
-                        return;
-                      }
-            
-                      grid[r][c] = value;
-                      redraw();
-            
-                      if (isCleared(grid)) {
-                        showToast(wrap, "クリア！");
-                        this.sm.changeScreen("result", { levelSize, cleared: true });
-                      }
-                    });
-    
-                    card.append(pad);
+                    updatePad();
+          card.append(padWrap);
         } catch (e) {
           status.textContent = "読み込みに失敗しました。";
           showToast(wrap, e?.message || "エラー");

@@ -56,11 +56,25 @@ export class SettingsScreen {
       document.documentElement.dataset.largeUi = large.checked ? "1" : "0";
     });
 
+    const guide = el("input", { attrs: { type: "checkbox" } });
+    guide.checked = !!settings.guideMode;
+    guide.addEventListener("change", () => {
+      this.gs.setState({ settings: { guideMode: guide.checked } });
+    });
+
+    const gen = el("input", { attrs: { type: "checkbox" } });
+    gen.checked = !!settings.useGeneratedPuzzles;
+    gen.addEventListener("change", () => {
+      this.gs.setState({ settings: { useGeneratedPuzzles: gen.checked } });
+    });
+
     card.append(
       el("p", { className: "sub", text: "集中しやすい表示に整えます。" }),
       row("効果音", sfx),
       row("同じ数をハイライト（予定）", hl),
       row("文字を大きめにする", large),
+      row("ガイドモード（入る数だけ押せる）", guide),
+      row("問題を自動生成（試験運用）", gen),
       el("p", {
         className: "hint",
         text: "※ この画面はあとで拡張します（ヒント表示など）"

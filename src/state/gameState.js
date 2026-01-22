@@ -5,7 +5,9 @@ function defaultState() {
     settings: {
       sfx: true,
       highlightSameNumber: true,
-      largeUI: false
+      largeUI: false,
+      guideMode: true,
+      useGeneratedPuzzles: false
     },
     progress: {
       clearedLevels: [3], // 初期：3は扱いやすいので「解放済み」として入れておく

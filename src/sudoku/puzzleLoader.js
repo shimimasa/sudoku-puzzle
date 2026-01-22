@@ -4,6 +4,15 @@ function randomPick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+
+function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
 /**
 + * public/data/manifest.json を参照し、
 + * public/data/level{N}/ 配下の問題JSONからランダムに1つロードする。
@@ -23,21 +32,37 @@ export async function loadRandomPuzzle(levelSize, { avoidId = null } = {}) {
     throw new Error(`level${levelSize} の問題が登録されていません`);
   }
 
-  // 2) ランダム抽選（直前と同じを避けたい場合）
-  let file = randomPick(files);
-  if (avoidId && files.length >= 2) {
-    let guard = 0;
-    while (`${key}/${file}` === avoidId && guard < 20) {
-      file = randomPick(files);
-      guard++;
+  // 2) 試行順を作る（直前と同じを避ける／404でも落ちないように複数試す）
+  let candidates = shuffle(files);
+  if (avoidId && candidates.length >= 2) {
+    candidates = candidates.filter((f) => `${key}/${f}` !== avoidId);
+    // 全部消えた場合は元に戻す
+    if (candidates.length === 0) candidates = shuffle(files);
+  }
+
+  const errors = [];
+
+  // 3) 候補を順番に試す（manifestがズレていても生存する）
+  for (const file of candidates) {
+    const url = `/data/level${levelSize}/${file}`;
+    try {
+      const pRes = await fetch(url, { cache: "no-store" });
+      if (!pRes.ok) {
+        errors.push(`${url} (${pRes.status})`);
+        continue;
+      }
+      const puzzle = await pRes.json();
+      return { id: `${key}/${file}`, levelSize, url, puzzle };
+    } catch (e) {
+      errors.push(`${url} (${e?.message || "fetch/json error"})`);
+      continue;
     }
   }
 
-  // 3) 問題JSONを読む
-  const url = `/data/level${levelSize}/${file}`;
-  const pRes = await fetch(url, { cache: "no-store" });
-  if (!pRes.ok) throw new Error(`問題ファイルを読み込めません: ${url}`);
-  const puzzle = await pRes.json();
+  // ここまで来たら「全部ダメ」
+  throw new Error(
+    `問題ファイルを読み込めませんでした: level${levelSize} / tried=${errors.join(", ")}`
+  );
 
-  return { id: `${key}/${file}`, levelSize, url, puzzle };
+
 }

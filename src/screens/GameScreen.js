@@ -238,8 +238,9 @@ export class GameScreen {
                     actions.appendChild(hintBtn);
                     card.append(actions, padWrap);
         } catch (e) {
-          status.textContent = "読み込みに失敗しました。";
-          showToast(wrap, e?.message || "エラー");
+          const msg = e?.message || "エラー";
+          status.textContent = `読み込みに失敗しました。(${msg})`;
+          showToast(wrap, msg);
         }
       }
      

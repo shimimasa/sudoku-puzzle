@@ -4,6 +4,11 @@ import { getPuzzle } from "../sudoku/puzzleLoader.js";
 import { renderBoard } from "../sudoku/renderer.js";
 import { renderPad } from "../sudoku/input.js";
 import { canPlace, isCleared, computeCandidates, findHint } from "../sudoku/engine.js";
+import {
+  createLearningLog,
+  finalizeLearningLog,
+  appendLearningLog
+} from "../state/learningLog.js";
 
 export class GameScreen {
   constructor(screenManager, gameState, params = {}) {
@@ -18,6 +23,7 @@ export class GameScreen {
   async mount(container) {
         const levelSize = Number(this.params.levelSize || 3);
         this.gs.startSession(levelSize);
+        this._finalizeLog = null;
     
         const wrap = el("div", { className: "screen" });
     
@@ -67,6 +73,7 @@ export class GameScreen {
                       });
                       puzzle = loaded.puzzle;
                       puzzleId = loaded.id;
+                      const puzzleSource = loaded.source === "generated" ? "generated" : "pool";
     
           // 次回の重複回避のため保存（盤面実装後も引き続き使える）
           this.gs.setState({
@@ -78,11 +85,30 @@ export class GameScreen {
           const grid = puzzle.grid.map((row) => [...row]);
           const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
           let selected = null;
-          let hintUsed = false;
+          let hintUsedCount = 0;
           let hintCell = null; // { r, c, soft?: boolean } or null
           let hintSoftTimer = null;
           let errorCell = null; // { r, c } or null
           let errorTimer = null;
+          let logFinalized = false;
+
+          const logEntry = createLearningLog({
+            levelSize,
+            difficulty: settings.difficulty || "normal",
+            source: puzzleSource,
+            puzzleId,
+            guideMode: settings.guideMode,
+            pencilMode: settings.pencilMode
+          });
+
+          const finalizeLog = (result) => {
+            if (logFinalized) return;
+            logFinalized = true;
+            const finalized = finalizeLearningLog(logEntry, { result });
+            appendLearningLog(finalized);
+          };
+
+          this._finalizeLog = finalizeLog;
 
           const setHintCell = (cell) => {
             hintCell = cell;
@@ -178,13 +204,23 @@ export class GameScreen {
                                   const onPadInput = (value) => {
                                     if (!selected) return;
                                     const { r, c } = selected;
+                                    const before = grid[r][c];
                         
                                     if (!canPlace(grid, r, c, value)) {
+                                      logEntry.invalidAttempts += 1;
                                       showToast(wrap, "そこには入らないよ");
                                       flashError(r, c);
                                       return;
                                     }
-                        
+
+                                    if (value === 0) {
+                                      if (before !== 0) {
+                                        logEntry.erasures += 1;
+                                      }
+                                    } else if (before !== value) {
+                                      logEntry.moves += 1;
+                                    }
+
                                     grid[r][c] = value;
                                     setHintCell(null); // 手動で触ったらヒント表示は消す
                                     redraw();
@@ -192,12 +228,13 @@ export class GameScreen {
                         
                                     if (isCleared(grid)) {
                                       showToast(wrap, "クリア！");
+                                      finalizeLog("cleared");
                                       this.sm.changeScreen("result", { levelSize, cleared: true });
                                     }
                                   };
 
                                   const onHint = () => {
-                                                if (hintUsed) return;
+                                                if (hintUsedCount > 0) return;
                                                 const h = findHint(grid, puzzle.numbers);
                                     
                                                if (h.type === "none") {
@@ -205,7 +242,8 @@ export class GameScreen {
                                                   return;
                                                 }
                                     
-                                                hintUsed = true;
+                                                hintUsedCount += 1;
+                                                logEntry.hintUsedCount = hintUsedCount;
                                                 hintBtn.setAttribute("disabled", "true");
                                     
                                                 if (h.type === "single") {
@@ -216,6 +254,7 @@ export class GameScreen {
                                                   redraw();
                                                   updatePad();
                                                   if (isCleared(grid)) {
+                                                    finalizeLog("cleared");
                                                     this.sm.changeScreen("result", { levelSize, cleared: true });
                                                   }
                                                   return;
@@ -243,6 +282,10 @@ export class GameScreen {
   unmount() {
     // 念のため（画面遷移後のタイマー発火でDOM触らないように）
     // ※ mount内スコープの timer はGC対象だが、保険として明示
+    if (this._finalizeLog) {
+      this._finalizeLog("abandoned");
+      this._finalizeLog = null;
+    }
     this._root = null;
   }
 }

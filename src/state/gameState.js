@@ -7,6 +7,7 @@ function defaultState() {
       highlightSameNumber: true,
       largeUI: false,
       guideMode: true,
+      pencilMode: false,
       useGeneratedPuzzles: false,
       difficulty: "normal" // "easy" | "normal" | "hard"
     },

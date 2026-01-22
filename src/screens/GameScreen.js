@@ -83,7 +83,34 @@ export class GameScreen {
           const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
           let selected = null;
           let hintUsed = false;
-          let hintCell = null; // { r, c } or null
+          let hintCell = null; // { r, c, soft?: boolean } or null
+          let hintSoftTimer = null;
+          let errorCell = null; // { r, c } or null
+          let errorTimer = null;
+
+          const setHintCell = (cell) => {
+            hintCell = cell;
+            if (hintSoftTimer) clearTimeout(hintSoftTimer);
+            if (cell) {
+              // 一定時間後に“強調”を弱める（次の操作でも解除）
+              hintSoftTimer = setTimeout(() => {
+                if (hintCell && hintCell.r === cell.r && hintCell.c === cell.c) {
+                  hintCell = { ...hintCell, soft: true };
+                  redraw();
+                }
+              }, 2200);
+            }
+          };
+
+          const flashError = (r, c) => {
+            errorCell = { r, c };
+            if (errorTimer) clearTimeout(errorTimer);
+            errorTimer = setTimeout(() => {
+              errorCell = null;
+              redraw();
+            }, 520);
+            redraw();
+          };
 
           const padWrap = el("div");
     
@@ -95,17 +122,35 @@ export class GameScreen {
           });
           const redraw = () => {
             const candidates = computeCandidates(grid, puzzle.numbers);
+            const { highlightSameNumber } = this.gs.state.settings;
+            const highlightSet = new Set();
+            if (highlightSameNumber && selected) {
+              const v = grid[selected.r][selected.c];
+              if (v && v !== 0) {
+                for (let rr = 0; rr < grid.length; rr++) {
+                  for (let cc = 0; cc < grid.length; cc++) {
+                    if (grid[rr][cc] === v) highlightSet.add(`${rr},${cc}`);
+                  }
+                }
+              }
+            }
+
                       board.innerHTML = "";
                       board.appendChild(
                         renderBoard({
                           grid,
                           fixed,
+                          numbers: puzzle.numbers,
                           candidates,
-                hint: hintCell,
+                          selected,
+                          highlightSet,
+                          hint: hintCell,
+                          error: errorCell,
                           onSelect: (r, c) => {
                             selected = { r, c };
-                            hintCell = null; // 手動で触ったらヒント表示は消す
+                            setHintCell(null); // 手動で触ったらヒント表示は消す
                             updatePad(); // 選択が変わったら候補更新
+                            redraw(); // 選択表示/同値ハイライト更新
                           }
                         })
                       );
@@ -140,11 +185,12 @@ export class GameScreen {
                         
                                     if (!canPlace(grid, r, c, value)) {
                                       showToast(wrap, "そこには入らないよ");
+                                      flashError(r, c);
                                       return;
                                     }
                         
                                     grid[r][c] = value;
-                                    hintCell = null; // 手動で触ったらヒント表示は消す
+                                    setHintCell(null); // 手動で触ったらヒント表示は消す
                                     redraw();
                                     updatePad();
                         
@@ -170,7 +216,7 @@ export class GameScreen {
                                                   // 1手だけ埋める（“埋めやすい場所”の具体例として最強）
                                                   grid[h.r][h.c] = h.value;
                                                   showToast(wrap, "ここは1つに決まるよ");
-                                                  hintCell = { r: h.r, c: h.c };
+                                                  setHintCell({ r: h.r, c: h.c, soft: false });
                                                   redraw();
                                                   updatePad();
                                                   if (isCleared(grid)) {
@@ -180,7 +226,7 @@ export class GameScreen {
                                                 }
                                     
                                                 // 候補最小のマスを示す（埋めはしない）
-                                                hintCell = { r: h.r, c: h.c };
+                                                setHintCell({ r: h.r, c: h.c, soft: false });
                                                 showToast(wrap, "ここが考えやすいよ");
                                                 redraw();
                                               };
@@ -198,6 +244,8 @@ export class GameScreen {
       }
      
   unmount() {
+    // 念のため（画面遷移後のタイマー発火でDOM触らないように）
+    // ※ mount内スコープの timer はGC対象だが、保険として明示
     this._root = null;
   }
 }

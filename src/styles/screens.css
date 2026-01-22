@@ -54,6 +54,12 @@
   }
   
   .btn:active { transform: translateY(1px); }
+
+/* 盤面内ボタンのフォーカス（キーボード操作でも迷子にならない） */
+.sudokuCell:focus-visible {
+  outline: 2px solid rgba(140, 200, 255, 0.85);
+  outline-offset: 0px;
+}
   
   .topbar {
     width: min(860px, 96vw);

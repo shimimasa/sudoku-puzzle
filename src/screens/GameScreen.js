@@ -3,7 +3,7 @@ import { showToast } from "../ui/toast.js";
 import { loadRandomPuzzle } from "../sudoku/puzzleLoader.js";
 import { renderBoard } from "../sudoku/renderer.js";
 import { renderPad } from "../sudoku/input.js";
-import { canPlace, isCleared } from "../sudoku/engine.js";
+import { canPlace, isCleared, computeCandidates, findHint } from "../sudoku/engine.js";
 import { generateSolution, makePuzzleFromSolution } from "../sudoku/generator.js";
 
 export class GameScreen {
@@ -82,17 +82,29 @@ export class GameScreen {
           const grid = puzzle.grid.map((row) => [...row]);
           const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
           let selected = null;
+          let hintUsed = false;
+          let hintCell = null; // { r, c } or null
 
           const padWrap = el("div");
     
+          const actions = el("div", { className: "gameActions" });
+          const hintBtn = el("button", {
+            className: "btn",
+            text: "ヒント（1回）",
+            on: { click: () => onHint() }
+          });
           const redraw = () => {
+            const candidates = computeCandidates(grid, puzzle.numbers);
                       board.innerHTML = "";
                       board.appendChild(
                         renderBoard({
                           grid,
                           fixed,
+                          candidates,
+                hint: hintCell,
                           onSelect: (r, c) => {
                             selected = { r, c };
+                            hintCell = null; // 手動で触ったらヒント表示は消す
                             updatePad(); // 選択が変わったら候補更新
                           }
                         })
@@ -132,6 +144,7 @@ export class GameScreen {
                                     }
                         
                                     grid[r][c] = value;
+                                    hintCell = null; // 手動で触ったらヒント表示は消す
                                     redraw();
                                     updatePad();
                         
@@ -141,11 +154,43 @@ export class GameScreen {
                                     }
                                   };
 
+                                  const onHint = () => {
+                                                if (hintUsed) return;
+                                                const h = findHint(grid, puzzle.numbers);
+                                    
+                                               if (h.type === "none") {
+                                                  showToast(wrap, "ヒントが見つからないよ");
+                                                  return;
+                                                }
+                                    
+                                                hintUsed = true;
+                                                hintBtn.setAttribute("disabled", "true");
+                                    
+                                                if (h.type === "single") {
+                                                  // 1手だけ埋める（“埋めやすい場所”の具体例として最強）
+                                                  grid[h.r][h.c] = h.value;
+                                                  showToast(wrap, "ここは1つに決まるよ");
+                                                  hintCell = { r: h.r, c: h.c };
+                                                  redraw();
+                                                  updatePad();
+                                                  if (isCleared(grid)) {
+                                                    this.sm.changeScreen("result", { levelSize, cleared: true });
+                                                  }
+                                                  return;
+                                                }
+                                    
+                                                // 候補最小のマスを示す（埋めはしない）
+                                                hintCell = { r: h.r, c: h.c };
+                                                showToast(wrap, "ここが考えやすいよ");
+                                                redraw();
+                                              };
+
 
                     redraw();
             
                     updatePad();
-          card.append(padWrap);
+                    actions.appendChild(hintBtn);
+                    card.append(actions, padWrap);
         } catch (e) {
           status.textContent = "読み込みに失敗しました。";
           showToast(wrap, e?.message || "エラー");

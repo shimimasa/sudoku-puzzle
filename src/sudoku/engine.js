@@ -42,3 +42,56 @@ export function isCleared(grid) {
   }
   return true;
 }
+
+// 空マスの候補（鉛筆）を計算
+// return: candidates[r][c] = number[]  （埋まっているマスは []）
+export function computeCandidates(grid, numbers) {
+    const size = grid.length;
+    const out = Array.from({ length: size }, () =>
+      Array.from({ length: size }, () => [])
+    );
+  
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c] !== 0) continue;
+        const cand = [];
+        for (const n of numbers) {
+          if (canPlace(grid, r, c, n)) cand.push(n);
+        }
+        out[r][c] = cand;
+      }
+    }
+    return out;
+  }
+  
+  // ヒント（1手）：
+  // 1) 候補1つのマス（Naked Single）を最優先
+  // 2) それが無ければ、候補数が最小のマスを示す（埋める値は決めない）
+  export function findHint(grid, numbers) {
+    const candidates = computeCandidates(grid, numbers);
+    const size = grid.length;
+  
+    let best = null; // { r, c, candCount, candidates: number[] }
+  
+  for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (grid[r][c] !== 0) continue;
+        const cand = candidates[r][c];
+        if (!cand || cand.length === 0) continue;
+  
+        if (cand.length === 1) {
+          return { type: "single", r, c, value: cand[0], candidates };
+        }
+  
+        if (!best || cand.length < best.candCount) {
+          best = { r, c, candCount: cand.length, candidates: cand };
+        }
+      }
+    }
+  
+    if (best) {
+      return { type: "suggest", r: best.r, c: best.c, candidates };
+    }
+  
+    return { type: "none", candidates };
+  }

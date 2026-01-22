@@ -1,6 +1,9 @@
 import { el } from "../ui/dom.js";
 import { showToast } from "../ui/toast.js";
 import { loadRandomPuzzle } from "../sudoku/puzzleLoader.js";
+import { renderBoard } from "../sudoku/renderer.js";
+import { renderPad } from "../sudoku/input.js";
+import { canPlace, isCleared } from "../sudoku/engine.js";
 
 export class GameScreen {
   constructor(screenManager, gameState, params = {}) {
@@ -58,38 +61,46 @@ export class GameScreen {
             session: { lastPuzzleId: loaded.id }
           });
     
-          status.textContent = `問題: ${loaded.id}`;
+          status.textContent = "同じ数字は たて・よこ に入らないよ";
+
+          const grid = loaded.puzzle.grid.map((row) => [...row]);
+          const fixed = loaded.puzzle.grid.map((row) => row.map((v) => v !== 0));
+          let selected = null;
     
-          // いまは動作確認のため JSON を出す（次フェーズで盤面レンダリングへ置換）
-          board.innerHTML = "";
-          board.appendChild(
-            el("pre", {
-              className: "jsonPreview",
-              text: JSON.stringify(loaded.puzzle, null, 2)
-            })
-          );
+          const redraw = () => {
+                      board.innerHTML = "";
+                      board.appendChild(
+                        renderBoard({
+                          grid,
+                          fixed,
+                          onSelect: (r, c) => {
+                            selected = { r, c };
+                          }
+                        })
+                      );
+                    };
+            
+                    redraw();
+            
+                    const pad = renderPad(loaded.puzzle.numbers, (value) => {
+                      if (!selected) return;
+                      const { r, c } = selected;
+            
+                      if (!canPlace(grid, r, c, value)) {
+                        showToast(wrap, "そこには入らないよ");
+                        return;
+                      }
+            
+                      grid[r][c] = value;
+                      redraw();
+            
+                      if (isCleared(grid)) {
+                        showToast(wrap, "クリア！");
+                        this.sm.changeScreen("result", { levelSize, cleared: true });
+                      }
+                    });
     
-          const btnClear = el("button", {
-            className: "btn primary",
-            text: "（デモ）クリアにする",
-            on: {
-              click: () => {
-                showToast(wrap, "クリア！");
-                this.sm.changeScreen("result", { levelSize, cleared: true });
-              }
-            }
-          });
-    
-          const btnBack = el("button", {
-            className: "btn",
-            text: "レベル選択へ戻る",
-            on: () => {
-              this.gs.endSession();
-              this.sm.changeScreen("levels");
-            }
-          });
-    
-          card.append(btnClear, btnBack);
+                    card.append(pad);
         } catch (e) {
           status.textContent = "読み込みに失敗しました。";
           showToast(wrap, e?.message || "エラー");

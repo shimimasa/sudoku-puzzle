@@ -3,7 +3,7 @@ import { showToast } from "../ui/toast.js";
 import { getPuzzle } from "../sudoku/puzzleLoader.js";
 import { renderBoard } from "../sudoku/renderer.js";
 import { renderPad } from "../sudoku/input.js";
-import { canPlace, isCleared, computeCandidates, findHint } from "../sudoku/engine.js";
+import { canPlace, isCleared, computeCandidates, findHint, applyHint } from "../sudoku/engine.js";
 import {
   createLearningLog,
   finalizeLearningLog,
@@ -86,6 +86,8 @@ export class GameScreen {
           const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
           let selected = null;
           let hintUsedCount = 0;
+          let hintSuggestUsed = false;
+          let hintFillUsed = false;
           let hintCell = null; // { r, c, soft?: boolean } or null
           let hintSoftTimer = null;
           let errorCell = null; // { r, c } or null
@@ -137,14 +139,67 @@ export class GameScreen {
           const padWrap = el("div");
     
           const actions = el("div", { className: "gameActions" });
-          const hintBtn = el("button", {
-            className: "btn",
-            text: "ヒント（1回）",
-            on: { click: () => onHint() }
+          const helpBar = el("div", { className: "helpBar" });
+          const helpMenu = el("div", { className: "helpMenu" });
+          const helpToggle = el("button", {
+            className: "btn helpToggle",
+            text: "ヘルプ",
+            attrs: {
+              type: "button",
+              "aria-expanded": "false"
+            }
+          });
+          let helpOpen = false;
+          const pencilToggle = el("button", {
+            className: "helpItem",
+            attrs: { type: "button" }
+          });
+          const hintSuggestBtn = el("button", {
+            className: "helpItem",
+            text: "ここを示す",
+            attrs: { type: "button" }
+          });
+          const hintFillBtn = el("button", {
+            className: "helpItem",
+            text: "1マスだけ埋める",
+            attrs: { type: "button" }
+          });
+
+          const setPencilMode = (next) => {
+            this.gs.setState({
+              settings: {
+                pencilMode: next
+              }
+            });
+            logEntry.pencilMode = next;
+            redraw();
+            updateHelpMenu();
+          };
+
+          const updateHelpMenu = () => {
+            const { pencilMode } = this.gs.state.settings;
+            pencilToggle.textContent = pencilMode ? "候補を表示：ON" : "候補を表示：OFF";
+            pencilToggle.setAttribute("aria-pressed", pencilMode ? "true" : "false");
+            hintSuggestBtn.toggleAttribute("disabled", hintSuggestUsed);
+            hintFillBtn.toggleAttribute("disabled", hintFillUsed);
+            hintSuggestBtn.textContent = hintSuggestUsed ? "ここを示す（使用済み）" : "ここを示す";
+            hintFillBtn.textContent = hintFillUsed ? "1マスだけ埋める（使用済み）" : "1マスだけ埋める";
+          };
+
+          const toggleHelpMenu = () => {
+            helpOpen = !helpOpen;
+            helpMenu.classList.toggle("isOpen", helpOpen);
+            helpToggle.setAttribute("aria-expanded", helpOpen ? "true" : "false");
+          };
+
+          helpToggle.addEventListener("click", toggleHelpMenu);
+          pencilToggle.addEventListener("click", () => {
+            const { pencilMode } = this.gs.state.settings;
+            setPencilMode(!pencilMode);
           });
           const redraw = () => {
             const candidates = computeCandidates(grid, puzzle.numbers);
-            const { highlightSameNumber } = this.gs.state.settings;
+                      const { highlightSameNumber, pencilMode } = this.gs.state.settings;
             const highlightSet = new Set();
             if (highlightSameNumber && selected) {
               const v = grid[selected.r][selected.c];
@@ -164,6 +219,7 @@ export class GameScreen {
                           fixed,
                           numbers: puzzle.numbers,
                           candidates,
+                          showPencil: pencilMode,
                           selected,
                           highlightSet,
                           hint: hintCell,
@@ -233,44 +289,64 @@ export class GameScreen {
                                     }
                                   };
 
-                                  const onHint = () => {
-                                                if (hintUsedCount > 0) return;
-                                                const h = findHint(grid, puzzle.numbers);
-                                    
-                                               if (h.type === "none") {
-                                                  showToast(wrap, "ヒントが見つからないよ");
-                                                  return;
-                                                }
-                                    
-                                                hintUsedCount += 1;
-                                                logEntry.hintUsedCount = hintUsedCount;
-                                                hintBtn.setAttribute("disabled", "true");
-                                    
-                                                if (h.type === "single") {
-                                                  // 1手だけ埋める（“埋めやすい場所”の具体例として最強）
-                                                  grid[h.r][h.c] = h.value;
-                                                  showToast(wrap, "ここは1つに決まるよ");
-                                                  setHintCell({ r: h.r, c: h.c, soft: false });
-                                                  redraw();
-                                                  updatePad();
-                                                  if (isCleared(grid)) {
-                                                    finalizeLog("cleared");
-                                                    this.sm.changeScreen("result", { levelSize, cleared: true });
-                                                  }
-                                                  return;
-                                                }
-                                    
-                                                // 候補最小のマスを示す（埋めはしない）
-                                                setHintCell({ r: h.r, c: h.c, soft: false });
-                                                showToast(wrap, "ここが考えやすいよ");
-                                                redraw();
-                                              };
+                                  const onSuggestHint = () => {
+                                    if (hintSuggestUsed) return;
+                                    const h = findHint(grid, puzzle.numbers);
+
+                                    if (h.type === "none") {
+                                      showToast(wrap, "ヒントが見つからないよ");
+                                      return;
+                                    }
+
+                                    hintSuggestUsed = true;
+                                    hintUsedCount += 1;
+                                    logEntry.hintUsedCount = hintUsedCount;
+                                    setHintCell({ r: h.r, c: h.c, soft: false });
+                                    showToast(wrap, "ここが考えやすいよ");
+                                    redraw();
+                                    updateHelpMenu();
+                                  };
+
+                                  const onFillHint = () => {
+                                    if (hintFillUsed) return;
+                                    const result = applyHint(grid, puzzle.numbers);
+
+                                    if (result.type === "none") {
+                                      showToast(wrap, "ヒントが見つからないよ");
+                                      return;
+                                    }
+
+                                    hintFillUsed = true;
+                                    hintUsedCount += 1;
+                                    logEntry.hintUsedCount = hintUsedCount;
+                                    showToast(wrap, "1マスだけ埋めるよ");
+                                    setHintCell({ r: result.r, c: result.c, soft: false });
+                                    redraw();
+                                    updatePad();
+                                    updateHelpMenu();
+                                    if (isCleared(grid)) {
+                                      finalizeLog("cleared");
+                                      this.sm.changeScreen("result", { levelSize, cleared: true });
+                                    }
+                                  };
+
+                                  hintSuggestBtn.addEventListener("click", () => {
+                                    onSuggestHint();
+                                    if (helpOpen) toggleHelpMenu();
+                                  });
+                                  hintFillBtn.addEventListener("click", () => {
+                                    onFillHint();
+                                    if (helpOpen) toggleHelpMenu();
+                                  });
 
 
                     redraw();
             
                     updatePad();
-                    actions.appendChild(hintBtn);
+                    helpMenu.append(pencilToggle, hintSuggestBtn, hintFillBtn);
+                    helpBar.append(helpToggle, helpMenu);
+                    actions.appendChild(helpBar);
+                    updateHelpMenu();
                     card.append(actions, padWrap);
         } catch (e) {
           const msg = e?.message || "エラー";

@@ -62,7 +62,8 @@ export class GameScreen {
                       // JSONが無い/ズレている場合でも必ず生成にフォールバックして「落ちない」
                       const loaded = await getPuzzle(levelSize, {
                         avoidId,
-                        preferGenerated: !!settings.useGeneratedPuzzles
+                        preferGenerated: !!settings.useGeneratedPuzzles,
+                        difficulty: settings.difficulty || "normal"
                       });
                       puzzle = loaded.puzzle;
                       puzzleId = loaded.id;

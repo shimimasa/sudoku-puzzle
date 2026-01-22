@@ -71,8 +71,10 @@ export async function loadRandomPuzzle(levelSize, { avoidId = null } = {}) {
 
 function generatePuzzle(levelSize) {
   // 生成が失敗しないようにリトライ付きの安全フローを使う
-  const ratio = Math.max(0.32, 0.52 - (levelSize - 3) * 0.03);
-  const puzzle = generatePuzzleWithRetry(levelSize, { givenRatio: ratio, maxRetries: 5 });
+  const puzzle = generatePuzzleWithRetry(levelSize, {
+    difficulty: "normal",
+    maxRetries: 5
+  });
   return { puzzle, id: `gen:${levelSize}:${Date.now()}`, url: null };
 }
 
@@ -86,10 +88,11 @@ function generatePuzzle(levelSize) {
  */
 export async function getPuzzle(
   levelSize,
-  { avoidId = null, preferGenerated = false } = {}
+  { avoidId = null, preferGenerated = false, difficulty = "normal" } = {}
 ) {
   if (preferGenerated) {
-    const g = generatePuzzle(levelSize);
+    const puzzle = generatePuzzleWithRetry(levelSize, { difficulty, maxRetries: 5 });
+    const g = { puzzle, id: `gen:${levelSize}:${Date.now()}`, url: null };
     return { id: g.id, levelSize, url: g.url, puzzle: g.puzzle, source: "generated" };
   }
 
@@ -97,7 +100,8 @@ export async function getPuzzle(
     const loaded = await loadRandomPuzzle(levelSize, { avoidId });
     return { ...loaded, source: "json" };
   } catch (_e) {
-    const g = generatePuzzle(levelSize);
+    const puzzle = generatePuzzleWithRetry(levelSize, { difficulty, maxRetries: 5 });
+    const g = { puzzle, id: `gen:${levelSize}:${Date.now()}`, url: null };
     return { id: g.id, levelSize, url: g.url, puzzle: g.puzzle, source: "generated" };
   }
 }

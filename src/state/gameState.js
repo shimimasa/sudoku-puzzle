@@ -7,7 +7,8 @@ function defaultState() {
       highlightSameNumber: true,
       largeUI: false,
       guideMode: true,
-      useGeneratedPuzzles: false
+      useGeneratedPuzzles: false,
+      difficulty: "normal" // "easy" | "normal" | "hard"
     },
     progress: {
       clearedLevels: [3], // 初期：3は扱いやすいので「解放済み」として入れておく

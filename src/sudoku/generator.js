@@ -73,6 +73,19 @@ function shuffle(arr) {
       return true;
     }
 
+    export function difficultyToGivenRatio(difficulty) {
+      // givenRatio = 残すマスの割合（空欄が多いほど小さい）
+      switch (difficulty) {
+        case "easy":
+          return 0.38; // 空欄多め
+        case "hard":
+          return 0.62; // 空欄少なめ
+        case "normal":
+        default:
+          return 0.48; // ふつう
+      }
+    }
+
     // 完成盤面を作る：
     // - size が平方数（4/9）ならブロック制約も満たす“数独”の解盤面
     // - それ以外（3/5/6/7/8）は行・列の重複なし（現状エンジン仕様に合わせる）
@@ -138,13 +151,17 @@ function shuffle(arr) {
     // 解盤面 → 穴あけ、という安全フローを1関数に（失敗時はリトライ）
     export function generatePuzzleWithRetry(
       size,
-      { givenRatio = 0.45, maxRetries = 5 } = {}
+      { difficulty = "normal", givenRatio = null, maxRetries = 5 } = {}
     ) {
+      const ratio =
+        typeof givenRatio === "number"
+          ? givenRatio
+          : difficultyToGivenRatio(difficulty);
       let lastErr = null;
       for (let i = 0; i <= maxRetries; i++) {
         try {
           const sol = generateSolution(size);
-          const puzzle = makePuzzleFromSolution(sol, givenRatio);
+          const puzzle = makePuzzleFromSolution(sol, ratio);
           if (!validatePuzzleShape(puzzle)) throw new Error("invalid puzzle shape");
           return puzzle;
         } catch (e) {

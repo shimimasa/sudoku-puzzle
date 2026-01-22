@@ -68,6 +68,17 @@ export class SettingsScreen {
       this.gs.setState({ settings: { useGeneratedPuzzles: gen.checked } });
     });
 
+    const diff = el("select");
+    const addOpt = (value, label) =>
+      diff.appendChild(el("option", { attrs: { value }, text: label }));
+    addOpt("easy", "EASY（空欄多め）");
+    addOpt("normal", "NORMAL（ふつう）");
+    addOpt("hard", "HARD（空欄少なめ）");
+    diff.value = settings.difficulty || "normal";
+    diff.addEventListener("change", () => {
+      this.gs.setState({ settings: { difficulty: diff.value } });
+    });
+
     card.append(
       el("p", { className: "sub", text: "集中しやすい表示に整えます。" }),
       row("効果音", sfx),
@@ -75,6 +86,7 @@ export class SettingsScreen {
       row("文字を大きめにする", large),
       row("ガイドモード（入る数だけ押せる）", guide),
       row("問題を自動生成（試験運用）", gen),
+      row("空欄の量", diff),
       el("p", {
         className: "hint",
         text: "※ この画面はあとで拡張します（ヒント表示など）"

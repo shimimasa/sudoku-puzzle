@@ -1,4 +1,4 @@
-import { generateSolution, makePuzzleFromSolution } from "./generator.js";
+import { generatePuzzleWithRetry } from "./generator.js";
 
 const MANIFEST_URL = "/data/manifest.json";
 
@@ -70,11 +70,9 @@ export async function loadRandomPuzzle(levelSize, { avoidId = null } = {}) {
 }
 
 function generatePuzzle(levelSize) {
-  // GameScreen で使っていた生成ロジックをそのまま集約（品質は問わないが、解が存在することが最優先）
-  const sol = generateSolution(levelSize);
-  // レベルが上がるほど “穴” を少し増やす（簡易）
+  // 生成が失敗しないようにリトライ付きの安全フローを使う
   const ratio = Math.max(0.32, 0.52 - (levelSize - 3) * 0.03);
-  const puzzle = makePuzzleFromSolution(sol, ratio);
+  const puzzle = generatePuzzleWithRetry(levelSize, { givenRatio: ratio, maxRetries: 5 });
   return { puzzle, id: `gen:${levelSize}:${Date.now()}`, url: null };
 }
 

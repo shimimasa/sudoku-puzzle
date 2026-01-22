@@ -15,6 +15,7 @@ export function renderBoard({
   fixed,
   numbers,
   candidates,
+  showPencil = true,
   selected,
   highlightSet,
   hint,
@@ -65,7 +66,7 @@ export function renderBoard({
         );
       }
       // 鉛筆（候補）表示：空マスのみ
-      if (value === 0 && candidates && candidates[r] && candidates[r][c]) {
+      if (showPencil && value === 0 && candidates && candidates[r] && candidates[r][c]) {
         const cand = candidates[r][c];
         if (cand.length > 0) {
           const set = new Set(cand);

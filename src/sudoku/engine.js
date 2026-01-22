@@ -67,9 +67,9 @@ export function computeCandidates(grid, numbers) {
   // ヒント（1手）：
   // 1) 候補1つのマス（Naked Single）を最優先
   // 2) それが無ければ、候補数が最小のマスを示す（埋める値は決めない）
-  export function findHint(grid, numbers) {
-    const candidates = computeCandidates(grid, numbers);
-    const size = grid.length;
+export function findHint(grid, numbers) {
+  const candidates = computeCandidates(grid, numbers);
+  const size = grid.length;
   
     let best = null; // { r, c, candCount, candidates: number[] }
   
@@ -93,5 +93,31 @@ export function computeCandidates(grid, numbers) {
       return { type: "suggest", r: best.r, c: best.c, candidates };
     }
   
-    return { type: "none", candidates };
+  return { type: "none", candidates };
+}
+
+// 強ヒント：1マスだけ埋める
+// 1) Naked Single があればそれを埋める
+// 2) それが無ければ候補最少のマスに対して最初の候補を埋める
+export function applyHint(grid, numbers) {
+  const hint = findHint(grid, numbers);
+  if (hint.type === "none") {
+    return { type: "none" };
   }
+
+  if (hint.type === "single") {
+    grid[hint.r][hint.c] = hint.value;
+    return { type: "single", r: hint.r, c: hint.c, value: hint.value };
+  }
+
+  if (hint.type === "suggest" && hint.candidates) {
+    const cand = hint.candidates[hint.r][hint.c];
+    if (cand && cand.length > 0) {
+      const value = cand[0];
+      grid[hint.r][hint.c] = value;
+      return { type: "filled", r: hint.r, c: hint.c, value };
+    }
+  }
+
+  return { type: "none" };
+}

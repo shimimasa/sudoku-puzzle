@@ -28,3 +28,49 @@
       line-height: 1.4;
       color: rgba(255,255,255,0.86);
     }
+
+
+/* === 数独盤面 === */
+.sudokuBoard {
+      display: grid;
+      gap: 6px;
+      margin: 12px 0;
+    }
+    
+    .sudokuCell {
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: white;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    
+    .sudokuCell.fixed {
+      background: rgba(255,255,255,0.22);
+      cursor: default;
+    }
+    
+    /* === 数字パッド === */
+    .numberPad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .padBtn {
+      padding: 12px 0;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 16px;
+    }
+    
+    .padBtn.erase {
+      grid-column: span 2;
+      background: rgba(255,120,120,0.25);
+    }

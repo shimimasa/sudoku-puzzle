@@ -1,10 +1,9 @@
 import { el } from "../ui/dom.js";
 import { showToast } from "../ui/toast.js";
-import { loadRandomPuzzle } from "../sudoku/puzzleLoader.js";
+import { getPuzzle } from "../sudoku/puzzleLoader.js";
 import { renderBoard } from "../sudoku/renderer.js";
 import { renderPad } from "../sudoku/input.js";
 import { canPlace, isCleared, computeCandidates, findHint } from "../sudoku/engine.js";
-import { generateSolution, makePuzzleFromSolution } from "../sudoku/generator.js";
 
 export class GameScreen {
   constructor(screenManager, gameState, params = {}) {
@@ -60,17 +59,13 @@ export class GameScreen {
                       let puzzle;
                       let puzzleId;
             
-                      if (settings.useGeneratedPuzzles) {
-                        const sol = generateSolution(levelSize);
-                        // レベルが上がるほど “穴” を少し増やす（簡易）
-                        const ratio = Math.max(0.32, 0.52 - (levelSize - 3) * 0.03);
-                        puzzle = makePuzzleFromSolution(sol, ratio);
-                        puzzleId = `gen:${levelSize}:${Date.now()}`;
-                      } else {
-                        const loaded = await loadRandomPuzzle(levelSize, { avoidId });
-                        puzzle = loaded.puzzle;
-                        puzzleId = loaded.id;
-                      }
+                      // JSONが無い/ズレている場合でも必ず生成にフォールバックして「落ちない」
+                      const loaded = await getPuzzle(levelSize, {
+                        avoidId,
+                        preferGenerated: !!settings.useGeneratedPuzzles
+                      });
+                      puzzle = loaded.puzzle;
+                      puzzleId = loaded.id;
     
           // 次回の重複回避のため保存（盤面実装後も引き続き使える）
           this.gs.setState({

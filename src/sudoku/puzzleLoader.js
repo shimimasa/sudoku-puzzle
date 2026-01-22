@@ -1,3 +1,5 @@
+import { generateSolution, makePuzzleFromSolution } from "./generator.js";
+
 const MANIFEST_URL = "/data/manifest.json";
 
 function randomPick(arr) {
@@ -65,4 +67,39 @@ export async function loadRandomPuzzle(levelSize, { avoidId = null } = {}) {
   );
 
 
+}
+
+function generatePuzzle(levelSize) {
+  // GameScreen で使っていた生成ロジックをそのまま集約（品質は問わないが、解が存在することが最優先）
+  const sol = generateSolution(levelSize);
+  // レベルが上がるほど “穴” を少し増やす（簡易）
+  const ratio = Math.max(0.32, 0.52 - (levelSize - 3) * 0.03);
+  const puzzle = makePuzzleFromSolution(sol, ratio);
+  return { puzzle, id: `gen:${levelSize}:${Date.now()}`, url: null };
+}
+
+/**
+ * 出題取得を1か所に集約：
+ * - preferGenerated が true なら必ず生成
+ * - JSONロードに失敗したら必ず生成にフォールバック
+ *
+ * @param {number} levelSize 3..9
+ * @param {{avoidId?: string|null, preferGenerated?: boolean}} options
+ */
+export async function getPuzzle(
+  levelSize,
+  { avoidId = null, preferGenerated = false } = {}
+) {
+  if (preferGenerated) {
+    const g = generatePuzzle(levelSize);
+    return { id: g.id, levelSize, url: g.url, puzzle: g.puzzle, source: "generated" };
+  }
+
+  try {
+    const loaded = await loadRandomPuzzle(levelSize, { avoidId });
+    return { ...loaded, source: "json" };
+  } catch (_e) {
+    const g = generatePuzzle(levelSize);
+    return { id: g.id, levelSize, url: g.url, puzzle: g.puzzle, source: "generated" };
+  }
 }

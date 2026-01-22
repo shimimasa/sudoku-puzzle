@@ -1,11 +1,11 @@
 .boardPlaceholder {
     width: 100%;
-    height: 260px;
     border-radius: 18px;
     border: 1px dashed rgba(255,255,255,0.22);
     background: rgba(255,255,255,0.04);
-    display: grid;
-    place-items: center;
+    /* 固定height + place-items:center だと盤面が「最小サイズ」に縮むのでやめる */
+    padding: 18px 14px;
+    min-height: 260px;
     margin: 12px 0 6px;
   }
   
@@ -34,7 +34,9 @@
 .sudokuBoard {
       display: grid;
       gap: 6px;
-      margin: 12px 0;
+      /* 盤面が縮まないように幅を与えて中央に置く */
+      width: min(360px, 100%);
+      margin: 12px auto;
     }
     
     .sudokuCell {
@@ -43,10 +45,19 @@
       border: 1px solid rgba(255,255,255,0.2);
       background: rgba(255,255,255,0.08);
       color: white;
-      font-size: 22px;
-      font-weight: 700;
+      /* 値（中央）と鉛筆（下）を安定して配置 */
+      position: relative;
+      display: grid;
+      place-items: center;
+      padding: 0;
       cursor: pointer;
     }
+
+    .cellValue {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1;
+          }
     
     .sudokuCell.fixed {
       background: rgba(255,255,255,0.22);
@@ -80,10 +91,6 @@
         cursor: not-allowed;
       }
 
-    /* 鉛筆（候補）表示 */
-.sudokuCell {
-    position: relative;
-  }
   
   .pencil {
     position: absolute;
@@ -96,6 +103,7 @@
     color: rgba(255,255,255,0.55);
     text-align: center;
     pointer-events: none;
+    white-space: nowrap;
   }
   
   /* ヒントで示すマス */

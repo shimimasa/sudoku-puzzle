@@ -14,7 +14,8 @@ function defaultState() {
     session: {
       currentLevelSize: null,
       // 後でここに「盤面」「固定セル」「経過」などを追加
-      inProgress: false
+      inProgress: false,
+      lastPuzzleId: null
     }
   };
 }

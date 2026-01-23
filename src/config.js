@@ -21,7 +21,7 @@ export const APP = {
 
   export const LEVEL_STATUS_LABELS = {
     CLEAR: "クリア！",
-    PLAY: "つづき",
+    PLAY: "さいかい",
     LOCK: "まだだよ"
   };
 

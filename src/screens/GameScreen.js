@@ -19,9 +19,24 @@ export class GameScreen {
     this.name = "game";
     this._root = null;
     this._abort = null;
+    this._timeouts = new Set();
+    this._active = false;
+    this._mountToken = 0;
   }
 
   async mount(container) {
+        this._active = true;
+        const token = ++this._mountToken;
+        const schedule = (fn, ms) => {
+          const id = setTimeout(() => {
+            this._timeouts.delete(id);
+            fn();
+          }, ms);
+          this._timeouts.add(id);
+          return id;
+        };
+        const isActive = () => this._active && this._mountToken === token && this.sm.current === this;
+
         const levelSize = Number(this.params.levelSize || 3);
         this.gs.startSession(levelSize);
         this._finalizeLog = null;
@@ -217,7 +232,8 @@ export class GameScreen {
             if (hintSoftTimer) clearTimeout(hintSoftTimer);
             if (cell) {
               // 一定時間後に“強調”を弱める（次の操作でも解除）
-              hintSoftTimer = setTimeout(() => {
+              hintSoftTimer = schedule(() => {
+                if (!isActive()) return;
                 if (hintCell && hintCell.r === cell.r && hintCell.c === cell.c) {
                   hintCell = { ...hintCell, soft: true };
                   redraw();
@@ -233,7 +249,8 @@ export class GameScreen {
           const flashError = (r, c) => {
             errorCell = { r, c };
             if (errorTimer) clearTimeout(errorTimer);
-            errorTimer = setTimeout(() => {
+            errorTimer = schedule(() => {
+              if (!isActive()) return;
               errorCell = null;
               redraw();
             }, motionDelay(360, 80));
@@ -252,7 +269,8 @@ export class GameScreen {
             clearSparkles.classList.add("isActive");
             boardColumn.appendChild(clearSparkles);
             if (clearSparkleTimer) clearTimeout(clearSparkleTimer);
-            clearSparkleTimer = setTimeout(() => {
+            clearSparkleTimer = schedule(() => {
+              if (!isActive()) return;
               clearSparkles.classList.remove("isActive");
               clearSparkles.remove();
             }, motionDelay(1200, 100));
@@ -264,7 +282,8 @@ export class GameScreen {
             showToast(wrap, "やったね！");
             celebrateClear();
             finalizeLog("cleared");
-            setTimeout(() => {
+            schedule(() => {
+              if (!isActive()) return;
               this.sm.changeScreen("result", { levelSize, cleared: true });
             }, motionDelay(260, 50));
           };
@@ -516,6 +535,11 @@ export class GameScreen {
       }
      
   unmount() {
+    this._active = false;
+    for (const id of this._timeouts) {
+      clearTimeout(id);
+    }
+    this._timeouts.clear();
     // 念のため（画面遷移後のタイマー発火でDOM触らないように）
     // ※ mount内スコープの timer はGC対象だが、保険として明示
     if (this._finalizeLog) {

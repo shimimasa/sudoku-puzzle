@@ -49,6 +49,11 @@ export function renderBoard({
       } else if (isHint) {
         stateLabels.push("ヒント");
       }
+      const posLabel = `${r + 1}ぎょう${c + 1}れつ`;
+      const valueLabel = value !== 0 ? String(value) : "から";
+      const ariaLabel = stateLabels.length
+        ? `${posLabel}、${valueLabel}、${stateLabels.join("、")}`
+        : `${posLabel}、${valueLabel}`;
       const cell = el("button", {
         className: `sudokuCell ${isFixed ? "fixed" : "editable"} ${isHint ? "hint" : ""} ${
           isHintSoft ? "hintSoft" : ""
@@ -56,7 +61,7 @@ export function renderBoard({
         attrs: {
           type: "button",
           ...(isSelected ? { "aria-current": "true" } : {}),
-          ...(stateLabels.length ? { "aria-label": stateLabels.join(" / ") } : {})
+          "aria-label": ariaLabel
         },
         on: {
           click: () => {

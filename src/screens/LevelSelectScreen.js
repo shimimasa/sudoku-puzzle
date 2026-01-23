@@ -29,12 +29,20 @@ export class LevelSelectScreen {
     for (const lv of LEVELS) {
       const unlocked = isLevelUnlocked(progress, lv.size);
       const cleared = (progress.clearedLevels || []).includes(lv.size);
+      const session = this.gs.state.session;
+      const shouldResume = Boolean(
+        session?.inProgress && (session.currentLevelSize ?? lv.size) === lv.size
+      );
 
       const card = LevelCard({
         level: { ...lv, label: getLevelDisplayLabel(lv.size) },
         unlocked,
         cleared,
-        onSelect: () => this.sm.changeScreen("game", { levelSize: lv.size })
+        onSelect: () =>
+          this.sm.changeScreen("game", {
+            levelSize: lv.size,
+            ...(shouldResume ? { resume: true } : {})
+          })
       });
       grid.appendChild(card);
     }

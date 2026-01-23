@@ -31,7 +31,7 @@ export class TitleScreen {
     });
 
     const btnContinue = Button({
-      text: "つづきから",
+      text: "さいかい",
       variant: "secondary",
       onClick: () => {
         const last = state.progress.lastPlayed?.levelSize;
@@ -39,7 +39,11 @@ export class TitleScreen {
           this.sm.changeScreen("levels");
           return;
         }
-        this.sm.changeScreen("game", { levelSize: last });
+        const session = state.session;
+        const shouldResume = Boolean(
+          session?.inProgress && (session.currentLevelSize ?? last) === last
+        );
+        this.sm.changeScreen("game", { levelSize: last, ...(shouldResume ? { resume: true } : {}) });
       }
     });
 

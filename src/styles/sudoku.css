@@ -144,6 +144,17 @@
       gap: 10px;
       margin-top: 0;
     }
+
+    .padGuide {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      text-align: center;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px dashed rgba(255,255,255,0.2);
+    }
     
     .padBtn {
       padding: 14px 0;

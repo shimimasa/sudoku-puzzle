@@ -91,7 +91,15 @@ export class GameScreen {
 
           const grid = puzzle.grid.map((row) => [...row]);
           const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
-          let selected = null;
+          const findFirstEmpty = () => {
+            for (let r = 0; r < grid.length; r++) {
+              for (let c = 0; c < grid.length; c++) {
+                if (!fixed[r][c] && grid[r][c] === 0) return { r, c };
+              }
+            }
+            return null;
+          };
+          let selected = findFirstEmpty();
           let hintUsedCount = 0;
           let hintSuggestUsed = false;
           let hintFillUsed = false;
@@ -261,12 +269,18 @@ export class GameScreen {
 
                       padWrap.innerHTML = "";
                       padWrap.appendChild(
-                        renderNumberPad(levelSize, onPadInput, { disabledSet })
+                        renderNumberPad(levelSize, onPadInput, {
+                          disabledSet,
+                          showGuide: !selected
+                        })
                       );
                     };
                         
                                   const onPadInput = (value) => {
-                                    if (!selected) return;
+                                    if (!selected) {
+                                      showToast(wrap, "マスをえらんでね");
+                                      return;
+                                    }
                                     const { r, c } = selected;
                                     const before = grid[r][c];
                         

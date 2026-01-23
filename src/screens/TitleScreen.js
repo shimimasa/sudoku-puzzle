@@ -1,5 +1,6 @@
 import { el } from "../ui/dom.js";
 import { APP } from "../config.js";
+import { HeaderBar, Panel, Button } from "../ui/components.js";
 
 export class TitleScreen {
   constructor(screenManager, gameState, params = {}) {
@@ -13,8 +14,9 @@ export class TitleScreen {
   mount(container) {
     const state = this.gs.state;
 
-    const wrap = el("div", { className: "screen" });
-    const card = el("div", { className: "card" });
+    const wrap = el("div", { className: "screen screen--menu" });
+    const header = HeaderBar({ title: "タイトル" });
+    const panel = Panel();
 
     const title = el("h1", { className: "title", text: APP.name });
     const sub = el("p", {
@@ -22,35 +24,29 @@ export class TitleScreen {
       text: "小さく始めて、少しずつレベルアップ。"
     });
 
-    const btnStart = el("button", {
-      className: "btn primary",
+    const btnStart = Button({
       text: "はじめる",
-      on: {
-        click: () => this.sm.changeScreen("levels")
-      }
+      variant: "primary",
+      onClick: () => this.sm.changeScreen("levels")
     });
 
-    const btnContinue = el("button", {
-      className: "btn",
+    const btnContinue = Button({
       text: "つづきから",
-      on: {
-        click: () => {
-          const last = state.progress.lastPlayed?.levelSize;
-          if (!last) {
-            this.sm.changeScreen("levels");
-            return;
-          }
-          this.sm.changeScreen("game", { levelSize: last });
+      variant: "secondary",
+      onClick: () => {
+        const last = state.progress.lastPlayed?.levelSize;
+        if (!last) {
+          this.sm.changeScreen("levels");
+          return;
         }
+        this.sm.changeScreen("game", { levelSize: last });
       }
     });
 
-    const btnSettings = el("button", {
-      className: "btn",
+    const btnSettings = Button({
       text: "せってい",
-      on: {
-        click: () => this.sm.changeScreen("settings", { backTo: "title" })
-      }
+      variant: "secondary",
+      onClick: () => this.sm.changeScreen("settings", { backTo: "title" })
     });
 
     const footer = el("p", {
@@ -58,8 +54,8 @@ export class TitleScreen {
       text: "※ まずは「3マス」から。慣れたら次へ。"
     });
 
-    card.append(title, sub, btnStart, btnContinue, btnSettings, footer);
-    wrap.appendChild(card);
+    panel.append(title, sub, btnStart, btnContinue, btnSettings, footer);
+    wrap.append(header, panel);
 
     container.innerHTML = "";
     container.appendChild(wrap);

@@ -1,3 +1,4 @@
+import { LEVEL_STATUS_LABELS } from "../config.js";
 import { el } from "./dom.js";
 
 export function HeaderBar({
@@ -77,6 +78,7 @@ export function SwitchControl(input) {
 
 export function LevelCard({ level, unlocked, cleared, onSelect }) {
   const status = unlocked ? (cleared ? "CLEAR" : "PLAY") : "LOCK";
+  const statusLabel = LEVEL_STATUS_LABELS[status] || status;
   const labelMatch = level.label.match(/^(.*)（(.*)）$/);
   const name = labelMatch ? labelMatch[1] : level.label;
   const range = labelMatch ? labelMatch[2] : "";
@@ -101,7 +103,7 @@ export function LevelCard({ level, unlocked, cleared, onSelect }) {
     el("div", { className: "levelCard__number", text: String(level.size) }),
     el("span", {
       className: `levelCard__status levelCard__status--${status.toLowerCase()}`,
-      text: status
+      text: statusLabel
     })
   );
 

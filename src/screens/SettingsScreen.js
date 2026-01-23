@@ -1,4 +1,5 @@
 import { el } from "../ui/dom.js";
+import { DIFFICULTY_LABELS } from "../config.js";
 import { HeaderBar, Panel, SettingRow, SwitchControl } from "../ui/components.js";
 
 export class SettingsScreen {
@@ -89,9 +90,9 @@ export class SettingsScreen {
     const diff = el("select", { className: "settingRow__select" });
     const addOpt = (value, label) =>
       diff.appendChild(el("option", { attrs: { value }, text: label }));
-    addOpt("easy", "EASY（空欄多め）");
-    addOpt("normal", "NORMAL（ふつう）");
-    addOpt("hard", "HARD（空欄少なめ）");
+    addOpt("easy", DIFFICULTY_LABELS.easy);
+    addOpt("normal", DIFFICULTY_LABELS.normal);
+    addOpt("hard", DIFFICULTY_LABELS.hard);
     diff.value = settings.difficulty || "normal";
     diff.addEventListener("change", () => {
       this.gs.setState({ settings: { difficulty: diff.value } });

@@ -1,5 +1,5 @@
 import { el } from "../ui/dom.js";
-import { LEVELS, isLevelUnlocked } from "../config.js";
+import { LEVELS, getLevelDisplayLabel, isLevelUnlocked } from "../config.js";
 import { HeaderBar, Panel, LevelCard } from "../ui/components.js";
 
 export class LevelSelectScreen {
@@ -31,7 +31,7 @@ export class LevelSelectScreen {
       const cleared = (progress.clearedLevels || []).includes(lv.size);
 
       const card = LevelCard({
-        level: lv,
+        level: { ...lv, label: getLevelDisplayLabel(lv.size) },
         unlocked,
         cleared,
         onSelect: () => this.sm.changeScreen("game", { levelSize: lv.size })

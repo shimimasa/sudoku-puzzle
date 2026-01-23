@@ -25,6 +25,10 @@ export class GameScreen {
         const levelSize = Number(this.params.levelSize || 3);
         this.gs.startSession(levelSize);
         this._finalizeLog = null;
+        const reduceMotion = typeof window !== "undefined" &&
+          window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const motionDelay = (ms, reducedMs = 0) => (reduceMotion ? reducedMs : ms);
     
         const wrap = el("div", { className: "screen" });
     
@@ -218,7 +222,7 @@ export class GameScreen {
                   hintCell = { ...hintCell, soft: true };
                   redraw();
                 }
-              }, 2200);
+              }, motionDelay(2200, 100));
             }
           };
 
@@ -232,7 +236,7 @@ export class GameScreen {
             errorTimer = setTimeout(() => {
               errorCell = null;
               redraw();
-            }, 360);
+            }, motionDelay(360, 80));
             redraw();
           };
 
@@ -251,7 +255,7 @@ export class GameScreen {
             clearSparkleTimer = setTimeout(() => {
               clearSparkles.classList.remove("isActive");
               clearSparkles.remove();
-            }, 1200);
+            }, motionDelay(1200, 100));
           };
 
           const handleClear = () => {
@@ -262,7 +266,7 @@ export class GameScreen {
             finalizeLog("cleared");
             setTimeout(() => {
               this.sm.changeScreen("result", { levelSize, cleared: true });
-            }, 260);
+            }, motionDelay(260, 50));
           };
     
           const actions = el("div", { className: "gameActions" });

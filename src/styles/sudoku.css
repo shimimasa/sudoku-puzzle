@@ -41,7 +41,7 @@
       gap: var(--gap);
       /* board最大幅（カード内で安定） */
       --boardMax: min(92vw, 560px);
-      --cell: clamp(40px, calc((var(--boardMax) - (var(--gap) * (var(--n) - 1))) / var(--n)), 78px);
+      --cell: clamp(44px, calc((var(--boardMax) - (var(--gap) * (var(--n) - 1))) / var(--n)), 78px);
       grid-template-columns: repeat(var(--n), var(--cell));
       grid-auto-rows: var(--cell);
       width: max-content;
@@ -61,8 +61,8 @@
       padding: 0;
       cursor: pointer;
       overflow: hidden;
-      min-width: 40px; /* mobileの最小タップ領域 */
-      min-height: 40px;
+      min-width: 44px; /* mobileの最小タップ領域 */
+      min-height: 44px;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -95,7 +95,15 @@
 
     /* 同じ数字の薄い強調（設定ON時のみ renderer が付与） */
     .sudokuCell.isSame:not(.isSelected) {
-      background: rgba(140, 200, 255, 0.10);
+      background:
+        repeating-linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.14),
+          rgba(255, 255, 255, 0.14) 4px,
+          rgba(255, 255, 255, 0.02) 4px,
+          rgba(255, 255, 255, 0.02) 8px
+        ),
+        rgba(140, 200, 255, 0.10);
       border-color: rgba(140, 200, 255, 0.22);
     }
 
@@ -105,6 +113,23 @@
       background: rgba(255, 190, 190, 0.10);
       border-color: rgba(255, 190, 190, 0.40);
       box-shadow: 0 0 0 2px rgba(255, 200, 200, 0.12);
+    }
+
+    .sudokuCell.isError::after {
+      content: "!";
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: rgba(255, 190, 190, 0.85);
+      color: rgba(40, 10, 10, 0.85);
+      font-size: 11px;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 0 1px rgba(255, 160, 160, 0.35);
     }
     @media (prefers-reduced-motion: no-preference) {
       .sudokuCell.isError {
@@ -241,12 +266,15 @@
   /* ヒントで示すマス */
   .sudokuCell.hint {
     outline: 2px solid rgba(140, 200, 255, 0.75);
+    outline-style: double;
     box-shadow: 0 0 0 4px rgba(140, 200, 255, 0.18);
   }
 
   /* 時間経過でヒント強調を弱める */
   .sudokuCell.hint.hintSoft {
-    outline-color: rgba(140, 200, 255, 0.45);
+    outline-color: rgba(140, 200, 255, 0.55);
+    outline-style: dashed;
+    outline-width: 2px;
     box-shadow: 0 0 0 3px rgba(140, 200, 255, 0.10);
   }
   
@@ -321,6 +349,7 @@
 
   .helpToggle {
     padding: 8px 12px;
+    min-height: 44px;
     font-size: 14px;
   }
 
@@ -361,6 +390,7 @@
     width: 100%;
     text-align: left;
     padding: 8px 10px;
+    min-height: 44px;
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.15);
     background: rgba(255,255,255,0.08);

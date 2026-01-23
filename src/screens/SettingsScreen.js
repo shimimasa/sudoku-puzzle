@@ -41,13 +41,22 @@ export class SettingsScreen {
       });
     };
 
+    const bgm = el("input", {
+      className: "switchControl__input",
+      attrs: { type: "checkbox" }
+    });
+    bgm.checked = !!settings.bgmEnabled;
+    bgm.addEventListener("change", () => {
+      this.gs.setState({ settings: { bgmEnabled: bgm.checked } });
+    });
+
     const sfx = el("input", {
       className: "switchControl__input",
       attrs: { type: "checkbox" }
     });
-    sfx.checked = !!settings.sfx;
+    sfx.checked = settings.sfxEnabled ?? settings.sfx ?? true;
     sfx.addEventListener("change", () => {
-      this.gs.setState({ settings: { sfx: sfx.checked } });
+      this.gs.setState({ settings: { sfxEnabled: sfx.checked } });
     });
 
     const hl = el("input", {
@@ -100,7 +109,8 @@ export class SettingsScreen {
 
     panel.append(
       el("p", { className: "sub", text: "集中しやすい表示に整えます。" }),
-      buildToggleRow("効果音", null, sfx),
+      buildToggleRow("BGM", "おんがくのオン・オフ", bgm),
+      buildToggleRow("こうかおん", "ボタンやおしごとの音", sfx),
       buildToggleRow("同じ数をハイライト（予定）", "同じ数字を目で追いやすくします。", hl),
       buildToggleRow("文字を大きめにする", null, large),
       buildToggleRow("ガイドモード（入る数だけ押せる）", null, guide),
@@ -110,10 +120,7 @@ export class SettingsScreen {
         description: "むずかしさの目安です。",
         control: diff
       }),
-      el("p", {
-        className: "hint",
-        text: "※ この画面はあとで拡張します（ヒント表示など）"
-      })
+      el("p", { className: "hint", text: "※ 音はこれから すこしずつ ふえていきます。" })
     );
 
     wrap.append(header, panel);

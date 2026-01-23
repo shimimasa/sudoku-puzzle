@@ -3,7 +3,9 @@ import { loadStorage, saveStorage } from "./storage.js";
 function defaultState() {
   return {
     settings: {
+      bgmEnabled: true,
       sfx: true,
+      sfxEnabled: true,
       highlightSameNumber: true,
       largeUI: false,
       guideMode: true,
@@ -46,10 +48,14 @@ class GameState {
     if (!saved) return;
 
     // 破壊的変更を避けるため shallow merge
+    const mergedSettings = { ...defaultState().settings, ...(saved.settings || {}) };
+    if (mergedSettings.sfxEnabled == null) {
+      mergedSettings.sfxEnabled = mergedSettings.sfx ?? true;
+    }
     this._state = {
       ...defaultState(),
       ...saved,
-      settings: { ...defaultState().settings, ...(saved.settings || {}) },
+      settings: mergedSettings,
       progress: { ...defaultState().progress, ...(saved.progress || {}) },
       session: { ...defaultState().session, ...(saved.session || {}) }
     };
@@ -60,10 +66,14 @@ class GameState {
   }
 
   setState(patch) {
+    const mergedSettings = { ...this._state.settings, ...(patch.settings || {}) };
+    if (patch.settings && "sfxEnabled" in patch.settings && !("sfx" in patch.settings)) {
+      mergedSettings.sfx = mergedSettings.sfxEnabled;
+    }
     this._state = {
       ...this._state,
       ...patch,
-      settings: { ...this._state.settings, ...(patch.settings || {}) },
+      settings: mergedSettings,
       progress: { ...this._state.progress, ...(patch.progress || {}) },
       session: { ...this._state.session, ...(patch.session || {}) }
     };

@@ -1,4 +1,5 @@
 import { el } from "../ui/dom.js";
+import { HeaderBar, Panel, Button } from "../ui/components.js";
 
 export class ResultScreen {
   constructor(screenManager, gameState, params = {}) {
@@ -13,8 +14,9 @@ export class ResultScreen {
     const levelSize = Number(this.params.levelSize || 3);
     const cleared = Boolean(this.params.cleared);
 
-    const wrap = el("div", { className: "screen" });
-    const card = el("div", { className: "card" });
+    const wrap = el("div", { className: "screen screen--menu" });
+    const header = HeaderBar({ title: "リザルト" });
+    const panel = Panel();
 
     const title = el("h2", {
       className: "title",
@@ -31,26 +33,26 @@ export class ResultScreen {
     }
     this.gs.endSession();
 
-    const toLevels = el("button", {
-      className: "btn primary",
+    const nextPuzzle = Button({
+      text: "次の問題へ（同じレベル）",
+      variant: "primary",
+      onClick: () => this.sm.changeScreen("game", { levelSize })
+    });
+
+    const toLevels = Button({
       text: "レベル選択へ",
-      on: { click: () => this.sm.changeScreen("levels") }
+      variant: "secondary",
+      onClick: () => this.sm.changeScreen("levels")
     });
 
-    const toTitle = el("button", {
-      className: "btn",
+    const toTitle = Button({
       text: "タイトルへ",
-      on: { click: () => this.sm.changeScreen("title") }
+      variant: "secondary",
+      onClick: () => this.sm.changeScreen("title")
     });
 
-    const nextPuzzle = el("button", {
-              className: "btn",
-              text: "次の問題へ（同じレベル）",
-              on: { click: () => this.sm.changeScreen("game", { levelSize }) }
-            });
-
-    card.append(title, sub, toLevels, nextPuzzle, toTitle);
-    wrap.appendChild(card);
+    panel.append(title, sub, nextPuzzle, toLevels, toTitle);
+    wrap.append(header, panel);
 
     container.innerHTML = "";
     container.appendChild(wrap);

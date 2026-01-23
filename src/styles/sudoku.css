@@ -99,21 +99,22 @@
       border-color: rgba(140, 200, 255, 0.22);
     }
 
-    /* 入らない（エラー）を短時間フラッシュ */
+    /* 入らない（エラー）をやわらかく強調 */
     .sudokuCell.isError {
-      outline: 2px solid rgba(255, 140, 140, 0.90);
-      background: rgba(255, 140, 140, 0.14);
-      border-color: rgba(255, 140, 140, 0.55);
+      outline: 2px solid rgba(255, 190, 190, 0.65);
+      background: rgba(255, 190, 190, 0.10);
+      border-color: rgba(255, 190, 190, 0.40);
+      box-shadow: 0 0 0 2px rgba(255, 200, 200, 0.12);
     }
     @media (prefers-reduced-motion: no-preference) {
       .sudokuCell.isError {
-        animation: cellErrorPulse 520ms ease-out 1;
+        animation: cellErrorSoft 320ms ease-out 1;
       }
     }
-    @keyframes cellErrorPulse {
-      0% { transform: scale(1); }
-      35% { transform: scale(1.02); }
-      100% { transform: scale(1); }
+    @keyframes cellErrorSoft {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 200, 200, 0.0); }
+      60% { transform: scale(1.01); box-shadow: 0 0 0 5px rgba(255, 200, 200, 0.22); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 200, 200, 0.0); }
     }
     
   /* === 数字パッド === */
@@ -126,6 +127,7 @@
 
   .gameBoardColumn {
     min-width: 0;
+    position: relative;
   }
 
   .gamePadColumn {
@@ -143,6 +145,17 @@
       grid-template-columns: repeat(var(--pad-cols, 3), minmax(0, 1fr));
       gap: 10px;
       margin-top: 0;
+    }
+
+    .padGuide {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      text-align: center;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px dashed rgba(255,255,255,0.2);
     }
     
     .padBtn {
@@ -243,6 +256,57 @@
     gap: 10px;
     margin-top: 10px;
   }
+
+  .clearSparkles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clearSparkles.isActive {
+    display: block;
+  }
+
+  .clearSparkle {
+    position: absolute;
+    font-size: 18px;
+    color: rgba(255, 230, 160, 0.9);
+    text-shadow: 0 2px 10px rgba(255, 220, 160, 0.35);
+    opacity: 0;
+  }
+
+  .clearSparkle:nth-child(1) { top: 12%; left: 18%; }
+  .clearSparkle:nth-child(2) { top: 8%; left: 58%; font-size: 16px; }
+  .clearSparkle:nth-child(3) { top: 28%; left: 78%; font-size: 14px; }
+  .clearSparkle:nth-child(4) { top: 36%; left: 22%; font-size: 15px; }
+  .clearSparkle:nth-child(5) { top: 48%; left: 62%; }
+  .clearSparkle:nth-child(6) { top: 60%; left: 34%; font-size: 13px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .clearSparkles.isActive .clearSparkle {
+      animation: clearSparkleFloat 900ms ease-out forwards;
+    }
+    .clearSparkle:nth-child(2) { animation-delay: 60ms; }
+    .clearSparkle:nth-child(3) { animation-delay: 120ms; }
+    .clearSparkle:nth-child(4) { animation-delay: 180ms; }
+    .clearSparkle:nth-child(5) { animation-delay: 240ms; }
+    .clearSparkle:nth-child(6) { animation-delay: 300ms; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .clearSparkles.isActive .clearSparkle {
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes clearSparkleFloat {
+    0% { opacity: 0; transform: translateY(4px) scale(0.9); }
+    35% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-8px) scale(1.02); }
+  }
   
   .gameActions .btn {
     margin-top: 0;
@@ -258,6 +322,23 @@
   .helpToggle {
     padding: 8px 12px;
     font-size: 14px;
+  }
+
+  .helpTogglePrimary {
+    background: rgba(140, 200, 255, 0.22);
+    border-color: rgba(140, 200, 255, 0.45);
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(60, 120, 255, 0.12);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .helpTogglePrimary {
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+    .helpTogglePrimary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 26px rgba(60, 120, 255, 0.16);
+    }
   }
 
   .helpMenu {

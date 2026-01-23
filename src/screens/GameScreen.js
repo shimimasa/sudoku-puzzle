@@ -108,6 +108,7 @@ export class GameScreen {
           let errorCell = null; // { r, c } or null
           let errorTimer = null;
           let lastInvalidAt = 0;
+          let lastFixedInputAt = 0;
           let logFinalized = false;
           let hasCelebratedClear = false;
           let clearTransitioned = false;
@@ -314,6 +315,14 @@ export class GameScreen {
                                     }
                                     const { r, c } = selected;
                                     const before = grid[r][c];
+
+                                    if (fixed[r][c]) {
+                                      const now = Date.now();
+                                      if (now - lastFixedInputAt < 500) return;
+                                      lastFixedInputAt = now;
+                                      showToast(wrap, "ここはそのままでOK");
+                                      return;
+                                    }
                         
                                     if (!canPlace(grid, r, c, value)) {
                                       const now = Date.now();

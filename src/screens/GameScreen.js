@@ -113,6 +113,8 @@ export class GameScreen {
           const fixed = canResume
             ? session.fixed.map((row) => [...row])
             : puzzle.grid.map((row) => row.map((v) => v !== 0));
+          const grid = puzzle.grid.map((row) => [...row]);
+          const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
           const findFirstEmpty = () => {
             for (let r = 0; r < grid.length; r++) {
               for (let c = 0; c < grid.length; c++) {
@@ -125,6 +127,10 @@ export class GameScreen {
           let hintUsedCount = canResume ? session.hintUsedCount || 0 : 0;
           let hintSuggestUsed = canResume ? !!session.hintSuggestUsed : false;
           let hintFillUsed = canResume ? !!session.hintFillUsed : false;
+          let selected = findFirstEmpty();
+          let hintUsedCount = 0;
+          let hintSuggestUsed = false;
+          let hintFillUsed = false;
           let hintCell = null; // { r, c, soft?: boolean } or null
           let hintSoftTimer = null;
           let errorCell = null; // { r, c } or null

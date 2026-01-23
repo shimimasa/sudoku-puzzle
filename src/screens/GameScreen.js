@@ -107,7 +107,11 @@ export class GameScreen {
           let hintSoftTimer = null;
           let errorCell = null; // { r, c } or null
           let errorTimer = null;
+          let lastInvalidAt = 0;
           let logFinalized = false;
+          let hasCelebratedClear = false;
+          let clearTransitioned = false;
+          let clearSparkleTimer = null;
 
           const logEntry = createLearningLog({
             levelSize,
@@ -147,11 +151,38 @@ export class GameScreen {
             errorTimer = setTimeout(() => {
               errorCell = null;
               redraw();
-            }, 520);
+            }, 360);
             redraw();
           };
 
           const padWrap = el("div", { className: "gamePadWrap" });
+          const clearSparkles = el("div", { className: "clearSparkles", attrs: { "aria-hidden": "true" } });
+          for (let i = 0; i < 6; i++) {
+            clearSparkles.appendChild(el("span", { className: "clearSparkle", text: "✦" }));
+          }
+
+          const celebrateClear = () => {
+            if (hasCelebratedClear) return;
+            hasCelebratedClear = true;
+            clearSparkles.classList.add("isActive");
+            boardColumn.appendChild(clearSparkles);
+            if (clearSparkleTimer) clearTimeout(clearSparkleTimer);
+            clearSparkleTimer = setTimeout(() => {
+              clearSparkles.classList.remove("isActive");
+              clearSparkles.remove();
+            }, 1200);
+          };
+
+          const handleClear = () => {
+            if (clearTransitioned) return;
+            clearTransitioned = true;
+            showToast(wrap, "やったね！");
+            celebrateClear();
+            finalizeLog("cleared");
+            setTimeout(() => {
+              this.sm.changeScreen("result", { levelSize, cleared: true });
+            }, 260);
+          };
     
           const actions = el("div", { className: "gameActions" });
           const helpBar = el("div", { className: "helpBar" });
@@ -285,8 +316,11 @@ export class GameScreen {
                                     const before = grid[r][c];
                         
                                     if (!canPlace(grid, r, c, value)) {
+                                      const now = Date.now();
                                       logEntry.invalidAttempts += 1;
-                                      showToast(wrap, "そこには入らないよ");
+                                      if (now - lastInvalidAt < 500) return;
+                                      lastInvalidAt = now;
+                                      showToast(wrap, "べつのマスからね");
                                       flashError(r, c);
                                       return;
                                     }
@@ -305,9 +339,7 @@ export class GameScreen {
                                     updatePad();
                         
                                     if (isCleared(grid)) {
-                                      showToast(wrap, "クリア！");
-                                      finalizeLog("cleared");
-                                      this.sm.changeScreen("result", { levelSize, cleared: true });
+                                      handleClear();
                                     }
                                   };
 
@@ -347,8 +379,7 @@ export class GameScreen {
                                     updatePad();
                                     updateHelpMenu();
                                     if (isCleared(grid)) {
-                                      finalizeLog("cleared");
-                                      this.sm.changeScreen("result", { levelSize, cleared: true });
+                                      handleClear();
                                     }
                                   };
 

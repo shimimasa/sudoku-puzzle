@@ -372,4 +372,19 @@
     opacity: 0.45;
     cursor: not-allowed;
   }
+
+  .helpChoice {
+    display: grid;
+    gap: 2px;
+  }
+
+  .helpTitle {
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .helpDesc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.72);
+  }
       

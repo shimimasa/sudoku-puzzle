@@ -126,14 +126,20 @@ export class GameScreen {
           };
           let selected = canResume ? session.selected || findFirstEmpty() : findFirstEmpty();
           let hintUsedCount = canResume ? session.hintUsedCount || 0 : 0;
-          let hintSuggestUsed = canResume ? !!session.hintSuggestUsed : false;
-          let hintFillUsed = canResume ? !!session.hintFillUsed : false;
+          const hintCounts = canResume
+            ? {
+                look: session.hintCounts?.look || 0,
+                narrow: session.hintCounts?.narrow || 0,
+                fill: session.hintCounts?.fill || 0
+              }
+            : { look: 0, narrow: 0, fill: 0 };
           let hintCell = null; // { r, c, soft?: boolean } or null
           let hintSoftTimer = null;
           let errorCell = null; // { r, c } or null
           let errorTimer = null;
           let lastInvalidAt = 0;
           let lastFixedInputAt = 0;
+          let lastFillAt = 0;
           let logFinalized = false;
           let hasCelebratedClear = false;
           let clearTransitioned = false;
@@ -173,8 +179,9 @@ export class GameScreen {
                 source: puzzleSource,
                 difficulty: settings.difficulty || "normal",
                 hintUsedCount,
-                hintSuggestUsed,
-                hintFillUsed
+                hintSuggestUsed: false,
+                hintFillUsed: false,
+                hintCounts
               }
             });
           };
@@ -248,40 +255,32 @@ export class GameScreen {
             }
           });
           let helpOpen = false;
-          const pencilToggle = el("button", {
-            className: "helpItem",
+          const hintLookBtn = el("button", {
+            className: "helpItem helpChoice",
             attrs: { type: "button" }
           });
-          const hintSuggestBtn = el("button", {
-            className: "helpItem",
-            text: "ここを示す",
+          const hintNarrowBtn = el("button", {
+            className: "helpItem helpChoice",
             attrs: { type: "button" }
           });
           const hintFillBtn = el("button", {
-            className: "helpItem",
-            text: "1マスだけ埋める",
+            className: "helpItem helpChoice",
             attrs: { type: "button" }
           });
+          let narrowTimer = null;
 
-          const setPencilMode = (next) => {
-            this.gs.setState({
-              settings: {
-                pencilMode: next
-              }
-            });
-            logEntry.pencilMode = next;
-            redraw();
-            updateHelpMenu();
+          const setHelpLabel = (button, title, desc, count) => {
+            button.innerHTML = "";
+            button.append(
+              el("span", { className: "helpTitle", text: `${title}（${count}）` }),
+              el("span", { className: "helpDesc", text: desc })
+            );
           };
 
           const updateHelpMenu = () => {
-            const { pencilMode } = this.gs.state.settings;
-            pencilToggle.textContent = pencilMode ? "候補を表示：ON" : "候補を表示：OFF";
-            pencilToggle.setAttribute("aria-pressed", pencilMode ? "true" : "false");
-            hintSuggestBtn.toggleAttribute("disabled", hintSuggestUsed);
-            hintFillBtn.toggleAttribute("disabled", hintFillUsed);
-            hintSuggestBtn.textContent = hintSuggestUsed ? "ここを示す（使用済み）" : "ここを示す";
-            hintFillBtn.textContent = hintFillUsed ? "1マスだけ埋める（使用済み）" : "1マスだけ埋める";
+            setHelpLabel(hintLookBtn, "みる", "ここを見てみよう", hintCounts.look);
+            setHelpLabel(hintNarrowBtn, "しぼる", "候補が見えるよ", hintCounts.narrow);
+            setHelpLabel(hintFillBtn, "うめる", "1マスだけ進める", hintCounts.fill);
           };
 
           const toggleHelpMenu = () => {
@@ -291,10 +290,6 @@ export class GameScreen {
           };
 
           helpToggle.addEventListener("click", toggleHelpMenu);
-          pencilToggle.addEventListener("click", () => {
-            const { pencilMode } = this.gs.state.settings;
-            setPencilMode(!pencilMode);
-          });
           const redraw = () => {
             const candidates = computeCandidates(grid, puzzle.numbers);
                       const { highlightSameNumber, pencilMode } = this.gs.state.settings;
@@ -405,8 +400,7 @@ export class GameScreen {
                                     }
                                   };
 
-                                  const onSuggestHint = () => {
-                                    if (hintSuggestUsed) return;
+                                  const onLookHint = () => {
                                     const h = findHint(grid, puzzle.numbers);
 
                                     if (h.type === "none") {
@@ -414,18 +408,52 @@ export class GameScreen {
                                       return;
                                     }
 
-                                    hintSuggestUsed = true;
+                                    hintCounts.look += 1;
                                     hintUsedCount += 1;
                                     logEntry.hintUsedCount = hintUsedCount;
                                     setHintCell({ r: h.r, c: h.c, soft: false });
-                                    showToast(wrap, "ここが考えやすいよ");
+                                    showToast(wrap, "ここを見てね");
+                                    redraw();
+                                    updateHelpMenu();
+                                    persistSession();
+                                  };
+
+                                  const onNarrowHint = () => {
+                                    const h = findHint(grid, puzzle.numbers);
+
+                                    if (h.type === "none") {
+                                      showToast(wrap, "ヒントが見つからないよ");
+                                      return;
+                                    }
+
+                                    hintCounts.narrow += 1;
+                                    hintUsedCount += 1;
+                                    logEntry.hintUsedCount = hintUsedCount;
+                                    setHintCell({ r: h.r, c: h.c, soft: false });
+                                    showToast(wrap, "候補を見てね");
+                                    const prev = this.gs.state.settings.pencilMode;
+                                    if (!prev) {
+                                      this.gs.setState({ settings: { pencilMode: true } });
+                                    }
+                                    if (narrowTimer) clearTimeout(narrowTimer);
+                                    narrowTimer = setTimeout(() => {
+                                      if (!prev) {
+                                        this.gs.setState({ settings: { pencilMode: false } });
+                                      }
+                                      narrowTimer = null;
+                                      redraw();
+                                    }, 6000);
                                     redraw();
                                     updateHelpMenu();
                                     persistSession();
                                   };
 
                                   const onFillHint = () => {
-                                    if (hintFillUsed) return;
+                                    const now = Date.now();
+                                    if (now - lastFillAt < 10000) {
+                                      showToast(wrap, "あとで うめるよ");
+                                      return;
+                                    }
                                     const result = applyHint(grid, puzzle.numbers);
 
                                     if (result.type === "none") {
@@ -433,10 +461,11 @@ export class GameScreen {
                                       return;
                                     }
 
-                                    hintFillUsed = true;
+                                    lastFillAt = now;
+                                    hintCounts.fill += 1;
                                     hintUsedCount += 1;
                                     logEntry.hintUsedCount = hintUsedCount;
-                                    showToast(wrap, "1マスだけ埋めるよ");
+                                    showToast(wrap, "1マスうめたよ");
                                     setHintCell({ r: result.r, c: result.c, soft: false });
                                     redraw();
                                     updatePad();
@@ -447,8 +476,12 @@ export class GameScreen {
                                     }
                                   };
 
-                                  hintSuggestBtn.addEventListener("click", () => {
-                                    onSuggestHint();
+                                  hintLookBtn.addEventListener("click", () => {
+                                    onLookHint();
+                                    if (helpOpen) toggleHelpMenu();
+                                  });
+                                  hintNarrowBtn.addEventListener("click", () => {
+                                    onNarrowHint();
                                     if (helpOpen) toggleHelpMenu();
                                   });
                                   hintFillBtn.addEventListener("click", () => {
@@ -460,7 +493,7 @@ export class GameScreen {
                     redraw();
             
                     updatePad();
-                    helpMenu.append(pencilToggle, hintSuggestBtn, hintFillBtn);
+                    helpMenu.append(hintLookBtn, hintNarrowBtn, hintFillBtn);
                     helpBar.append(helpToggle, helpMenu);
                     actions.appendChild(helpBar);
                     updateHelpMenu();

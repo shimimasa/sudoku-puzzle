@@ -2,8 +2,9 @@ import { el } from "../ui/dom.js";
 import { showToast } from "../ui/toast.js";
 import { getPuzzle } from "../sudoku/puzzleLoader.js";
 import { renderBoard } from "../sudoku/renderer.js";
-import { renderPad } from "../sudoku/input.js";
+import { renderNumberPad } from "../ui/NumberPad.js";
 import { canPlace, isCleared, computeCandidates, findHint, applyHint } from "../sudoku/engine.js";
+import { getDigitsForLevel } from "../sudoku/digits.js";
 import {
   createLearningLog,
   finalizeLearningLog,
@@ -46,11 +47,17 @@ export class GameScreen {
     
         const card = el("div", { className: "card wide" });
         const status = el("p", { className: "sub", text: "問題をよみこみ中…" });
-    
+
         const board = el("div", { className: "boardPlaceholder" });
         board.appendChild(el("div", { className: "boardPlaceholderInner", text: "Loading..." }));
-    
-        card.append(status, board);
+
+        const gameLayout = el("div", { className: "gameLayout" });
+        const boardColumn = el("div", { className: "gameBoardColumn" });
+        const padColumn = el("div", { className: "gamePadColumn" });
+
+        boardColumn.append(status, board);
+        gameLayout.append(boardColumn, padColumn);
+        card.append(gameLayout);
         wrap.append(header, card);
     
         container.innerHTML = "";
@@ -136,7 +143,7 @@ export class GameScreen {
             redraw();
           };
 
-          const padWrap = el("div");
+          const padWrap = el("div", { className: "gamePadWrap" });
     
           const actions = el("div", { className: "gameActions" });
           const helpBar = el("div", { className: "helpBar" });
@@ -236,26 +243,27 @@ export class GameScreen {
             
 
                     const updatePad = () => {
-                                    const { guideMode } = this.gs.state.settings;
-                                    const disabledSet = new Set();
-                                    if (guideMode) {
-                                      if (!selected) {
-                                    // 選択してない時は全部押せない（誤操作防止）
-                                        puzzle.numbers.forEach((n) => disabledSet.add(n));
-                                        disabledSet.add(0);
-                                      } else {
-                                        const { r, c } = selected;
-                                        for (const n of puzzle.numbers) {
-                                          if (!canPlace(grid, r, c, n)) disabledSet.add(n);
-                                        }
-                                        // けす は常に許可（ガイドでもOK）
-                                      }
-                                    }
-                                    padWrap.innerHTML = "";
-                                    padWrap.appendChild(
-                                      renderPad(puzzle.numbers, onPadInput, { disabledSet })
-                                    );
-                                  };
+                      const { guideMode } = this.gs.state.settings;
+                      const digits = getDigitsForLevel(levelSize);
+                      const disabledSet = new Set();
+
+                      if (!selected) {
+                        // 選択してない時は全部押せない（誤操作防止）
+                        digits.forEach((n) => disabledSet.add(n));
+                        disabledSet.add(0);
+                      } else if (guideMode) {
+                        const { r, c } = selected;
+                        for (const n of digits) {
+                          if (!canPlace(grid, r, c, n)) disabledSet.add(n);
+                        }
+                        // けす は常に許可（ガイドでもOK）
+                      }
+
+                      padWrap.innerHTML = "";
+                      padWrap.appendChild(
+                        renderNumberPad(levelSize, onPadInput, { disabledSet })
+                      );
+                    };
                         
                                   const onPadInput = (value) => {
                                     if (!selected) return;
@@ -347,7 +355,8 @@ export class GameScreen {
                     helpBar.append(helpToggle, helpMenu);
                     actions.appendChild(helpBar);
                     updateHelpMenu();
-                    card.append(actions, padWrap);
+                    boardColumn.append(actions);
+                    padColumn.append(padWrap);
         } catch (e) {
           const msg = e?.message || "エラー";
           status.textContent = `読み込みに失敗しました。(${msg})`;

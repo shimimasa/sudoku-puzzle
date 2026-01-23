@@ -87,6 +87,31 @@
   margin-bottom: 0;
 }
 
+.resultBadges {
+  margin: 10px 0 16px;
+}
+
+.resultBadges__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.resultBadges__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resultBadges__item {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  font-size: 13px;
+}
+
 .hint {
   margin: 16px 0 0;
   color: rgba(255,255,255,0.62);

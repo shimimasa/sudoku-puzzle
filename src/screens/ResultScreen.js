@@ -1,6 +1,7 @@
 import { el } from "../ui/dom.js";
 import { HeaderBar, Panel, Button } from "../ui/components.js";
 import { getLatestLearningLog } from "../state/learningLog.js";
+import { getBadgesForLog } from "../state/badges.js";
 
 export class ResultScreen {
   constructor(screenManager, gameState, params = {}) {
@@ -31,6 +32,7 @@ export class ResultScreen {
 
     const logEntry = cleared ? getLatestLearningLog() : null;
     const reflection = cleared && logEntry ? this._buildReflection(logEntry) : null;
+    const badges = cleared && logEntry ? getBadgesForLog(logEntry) : [];
 
     if (cleared) {
       this.gs.markLevelCleared(levelSize);
@@ -56,6 +58,9 @@ export class ResultScreen {
     });
 
     panel.append(title, sub);
+    if (badges.length) {
+      panel.append(this._buildBadges(badges));
+    }
     if (reflection) {
       panel.append(reflection);
     }
@@ -69,6 +74,21 @@ export class ResultScreen {
 
   unmount() {
     this._root = null;
+  }
+
+  _buildBadges(badges) {
+    const wrap = el("section", { className: "resultBadges" });
+    wrap.append(
+      el("h3", { className: "resultBadges__title", text: "きょうの たからもの" })
+    );
+    const list = el("div", { className: "resultBadges__list" });
+    badges.forEach((badge) => {
+      list.appendChild(
+        el("span", { className: "resultBadges__item", text: badge.label })
+      );
+    });
+    wrap.append(list);
+    return wrap;
   }
 
   _buildReflection(logEntry) {

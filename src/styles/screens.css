@@ -278,10 +278,11 @@
 .levelCard__status {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   padding: 4px 8px;
   border-radius: 999px;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .levelCard__status--clear {

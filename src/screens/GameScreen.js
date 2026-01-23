@@ -68,19 +68,37 @@ export class GameScreen {
         try {
             const avoidId = this.gs.state.session.lastPuzzleId;
                       const { settings } = this.gs.state;
+            const { session } = this.gs.state;
             
                       let puzzle;
                       let puzzleId;
-            
-                      // JSONが無い/ズレている場合でも必ず生成にフォールバックして「落ちない」
-                      const loaded = await getPuzzle(levelSize, {
-                        avoidId,
-                        preferGenerated: !!settings.useGeneratedPuzzles,
-                        difficulty: settings.difficulty || "normal"
-                      });
-                      puzzle = loaded.puzzle;
-                      puzzleId = loaded.id;
-                      const puzzleSource = loaded.source === "generated" ? "generated" : "pool";
+                      let puzzleSource = "pool";
+                      const canResume =
+                        !!this.params.resume &&
+                        session.inProgress &&
+                        session.currentLevelSize === levelSize &&
+                        Array.isArray(session.grid) &&
+                        Array.isArray(session.fixed) &&
+                        Array.isArray(session.puzzleNumbers);
+
+                      if (canResume) {
+                        puzzle = {
+                          grid: session.fixed,
+                          numbers: session.puzzleNumbers
+                        };
+                        puzzleId = session.puzzleId || avoidId;
+                        puzzleSource = session.source || "pool";
+                      } else {
+                        // JSONが無い/ズレている場合でも必ず生成にフォールバックして「落ちない」
+                        const loaded = await getPuzzle(levelSize, {
+                          avoidId,
+                          preferGenerated: !!settings.useGeneratedPuzzles,
+                          difficulty: settings.difficulty || "normal"
+                        });
+                        puzzle = loaded.puzzle;
+                        puzzleId = loaded.id;
+                        puzzleSource = loaded.source === "generated" ? "generated" : "pool";
+                      }
     
           // 次回の重複回避のため保存（盤面実装後も引き続き使える）
           this.gs.setState({
@@ -89,6 +107,12 @@ export class GameScreen {
     
           status.textContent = "同じ数字は たて・よこ に入らないよ";
 
+          const grid = canResume
+            ? session.grid.map((row) => [...row])
+            : puzzle.grid.map((row) => [...row]);
+          const fixed = canResume
+            ? session.fixed.map((row) => [...row])
+            : puzzle.grid.map((row) => row.map((v) => v !== 0));
           const grid = puzzle.grid.map((row) => [...row]);
           const fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
           const findFirstEmpty = () => {
@@ -99,6 +123,10 @@ export class GameScreen {
             }
             return null;
           };
+          let selected = canResume ? session.selected || findFirstEmpty() : findFirstEmpty();
+          let hintUsedCount = canResume ? session.hintUsedCount || 0 : 0;
+          let hintSuggestUsed = canResume ? !!session.hintSuggestUsed : false;
+          let hintFillUsed = canResume ? !!session.hintFillUsed : false;
           let selected = findFirstEmpty();
           let hintUsedCount = 0;
           let hintSuggestUsed = false;
@@ -132,6 +160,28 @@ export class GameScreen {
 
           this._finalizeLog = finalizeLog;
 
+          const persistSession = () => {
+            const snapshotGrid = grid.map((row) => [...row]);
+            const snapshotFixed = fixed.map((row) => [...row]);
+            this.gs.setState({
+              session: {
+                currentLevelSize: levelSize,
+                inProgress: true,
+                lastPuzzleId: puzzleId || avoidId,
+                puzzleId: puzzleId || avoidId,
+                puzzleNumbers: puzzle.numbers,
+                grid: snapshotGrid,
+                fixed: snapshotFixed,
+                selected,
+                source: puzzleSource,
+                difficulty: settings.difficulty || "normal",
+                hintUsedCount,
+                hintSuggestUsed,
+                hintFillUsed
+              }
+            });
+          };
+
           const setHintCell = (cell) => {
             hintCell = cell;
             if (hintSoftTimer) clearTimeout(hintSoftTimer);
@@ -145,6 +195,10 @@ export class GameScreen {
               }, 2200);
             }
           };
+
+          if (!canResume) {
+            persistSession();
+          }
 
           const flashError = (r, c) => {
             errorCell = { r, c };
@@ -276,6 +330,7 @@ export class GameScreen {
                             setHintCell(null); // 手動で触ったらヒント表示は消す
                             updatePad(); // 選択が変わったら候補更新
                             redraw(); // 選択表示/同値ハイライト更新
+                            persistSession();
                           }
                         })
                       );
@@ -346,6 +401,7 @@ export class GameScreen {
                                     setHintCell(null); // 手動で触ったらヒント表示は消す
                                     redraw();
                                     updatePad();
+                                    persistSession();
                         
                                     if (isCleared(grid)) {
                                       handleClear();
@@ -368,6 +424,7 @@ export class GameScreen {
                                     showToast(wrap, "ここが考えやすいよ");
                                     redraw();
                                     updateHelpMenu();
+                                    persistSession();
                                   };
 
                                   const onFillHint = () => {
@@ -387,6 +444,7 @@ export class GameScreen {
                                     redraw();
                                     updatePad();
                                     updateHelpMenu();
+                                    persistSession();
                                     if (isCleared(grid)) {
                                       handleClear();
                                     }

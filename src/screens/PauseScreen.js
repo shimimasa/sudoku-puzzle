@@ -23,7 +23,7 @@ export class PauseScreen {
     const resume = el("button", {
       className: "btn primary",
       text: "つづける",
-      on: { click: () => this.sm.changeScreen("game", { levelSize }, { replace: true }) }
+      on: { click: () => this.sm.changeScreen("game", { levelSize, resume: true }, { replace: true }) }
     });
 
     const toLevels = el("button", {

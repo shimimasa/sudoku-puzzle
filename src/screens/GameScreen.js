@@ -147,10 +147,39 @@ export class GameScreen {
             guideMode: settings.guideMode,
             pencilMode: settings.pencilMode
           });
+          const mistakeCounts = new Map();
+          const helpUsedCounts = { ...logEntry.helpUsedCounts };
+          logEntry.helpUsedCounts = helpUsedCounts;
+          logEntry.resumeCount = this.params.resume && canResume ? 1 : 0;
+
+          const markFirstAction = () => {
+            if (logEntry.firstActionDelaySec == null) {
+              logEntry.firstActionDelaySec = Math.max(
+                0,
+                Math.round((Date.now() - logEntry.tsStart) / 1000)
+              );
+            }
+          };
+
+          const buildMistakeCells = () => {
+            if (!mistakeCounts.size) return {};
+            const sorted = Array.from(mistakeCounts.entries())
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5);
+            const result = {};
+            for (const [key, count] of sorted) {
+              result[key] = count;
+            }
+            return result;
+          };
 
           const finalizeLog = (result) => {
             if (logFinalized) return;
             logFinalized = true;
+            if (logEntry.firstActionDelaySec == null) {
+              logEntry.firstActionDelaySec = 0;
+            }
+            logEntry.mistakeCells = buildMistakeCells();
             const finalized = finalizeLearningLog(logEntry, { result });
             appendLearningLog(finalized);
           };
@@ -264,12 +293,16 @@ export class GameScreen {
           });
 
           const setPencilMode = (next) => {
+            markFirstAction();
             this.gs.setState({
               settings: {
                 pencilMode: next
               }
             });
             logEntry.pencilMode = next;
+            if (next) {
+              helpUsedCounts.narrow += 1;
+            }
             redraw();
             updateHelpMenu();
           };
@@ -368,7 +401,7 @@ export class GameScreen {
                                     const { r, c } = selected;
                                     const before = grid[r][c];
 
-                                    if (fixed[r][c]) {
+                                  if (fixed[r][c]) {
                                       const now = Date.now();
                                       if (now - lastFixedInputAt < 500) return;
                                       lastFixedInputAt = now;
@@ -376,9 +409,12 @@ export class GameScreen {
                                       return;
                                     }
                         
+                                    markFirstAction();
                                     if (!canPlace(grid, r, c, value)) {
                                       const now = Date.now();
                                       logEntry.invalidAttempts += 1;
+                                      const key = `${r},${c}`;
+                                      mistakeCounts.set(key, (mistakeCounts.get(key) || 0) + 1);
                                       if (now - lastInvalidAt < 500) return;
                                       lastInvalidAt = now;
                                       showToast(wrap, "べつのマスからね");
@@ -417,6 +453,7 @@ export class GameScreen {
                                     hintSuggestUsed = true;
                                     hintUsedCount += 1;
                                     logEntry.hintUsedCount = hintUsedCount;
+                                    helpUsedCounts.look += 1;
                                     setHintCell({ r: h.r, c: h.c, soft: false });
                                     showToast(wrap, "ここが考えやすいよ");
                                     redraw();
@@ -436,6 +473,7 @@ export class GameScreen {
                                     hintFillUsed = true;
                                     hintUsedCount += 1;
                                     logEntry.hintUsedCount = hintUsedCount;
+                                    helpUsedCounts.fill += 1;
                                     showToast(wrap, "1マスだけ埋めるよ");
                                     setHintCell({ r: result.r, c: result.c, soft: false });
                                     redraw();

@@ -49,7 +49,15 @@ export function createLearningLog({
     invalidAttempts: 0,
     guideMode,
     pencilMode,
-    hintUsedCount: 0
+    hintUsedCount: 0,
+    mistakeCells: {},
+    helpUsedCounts: {
+      look: 0,
+      narrow: 0,
+      fill: 0
+    },
+    firstActionDelaySec: null,
+    resumeCount: 0
   };
 }
 

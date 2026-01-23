@@ -2,6 +2,7 @@ import { APP } from "../config.js";
 
 const STORAGE_KEY = `${APP.storageKey}:learningLogs`;
 const MAX_LOGS = 200;
+let lastAppendedLog = null;
 
 function loadLogs() {
   try {
@@ -76,4 +77,11 @@ export function appendLearningLog(log) {
   logs.push(log);
   const trimmed = logs.length > MAX_LOGS ? logs.slice(-MAX_LOGS) : logs;
   saveLogs(trimmed);
+  lastAppendedLog = log;
+}
+
+export function getLatestLearningLog() {
+  if (lastAppendedLog) return lastAppendedLog;
+  const logs = loadLogs();
+  return logs.length ? logs[logs.length - 1] : null;
 }

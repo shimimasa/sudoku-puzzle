@@ -110,6 +110,12 @@ export class GameScreen {
           const grid = canResume
             ? session.grid.map((row) => [...row])
             : puzzle.grid.map((row) => [...row]);
+          let fixed = [];
+          if (canResume) {
+            fixed = session.fixed.map((row) => [...row]);
+          } else {
+            fixed = puzzle.grid.map((row) => row.map((v) => v !== 0));
+          }
           const fixed = canResume
             ? session.fixed.map((row) => [...row])
             : puzzle.grid.map((row) => row.map((v) => v !== 0));

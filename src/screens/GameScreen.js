@@ -157,8 +157,8 @@ export class GameScreen {
           const helpBar = el("div", { className: "helpBar" });
           const helpMenu = el("div", { className: "helpMenu" });
           const helpToggle = el("button", {
-            className: "btn helpToggle",
-            text: "ヘルプ",
+            className: "btn helpToggle helpTogglePrimary",
+            text: "たすけて",
             attrs: {
               type: "button",
               "aria-expanded": "false"

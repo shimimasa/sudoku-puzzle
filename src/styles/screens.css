@@ -122,6 +122,7 @@
 .btn {
   width: 100%;
   padding: 14px 16px;
+  min-height: 44px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.08);
@@ -179,6 +180,7 @@
 .headerBar__button {
   justify-self: start;
   padding: 10px 14px;
+  min-height: 44px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.08);
@@ -222,6 +224,7 @@
 
 .iconBtn {
   padding: 10px 12px;
+  min-height: 44px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.18);
   background: rgba(255,255,255,0.06);
@@ -243,6 +246,7 @@
 .levelCard {
   text-align: left;
   padding: 16px;
+  min-height: 44px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.08);
@@ -379,6 +383,7 @@
   position: relative;
   width: 46px;
   height: 26px;
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
 }
@@ -387,7 +392,7 @@
   position: absolute;
   opacity: 0;
   width: 46px;
-  height: 26px;
+  height: 44px;
   margin: 0;
   cursor: pointer;
 }
@@ -429,6 +434,7 @@
   border-radius: 12px;
   color: var(--text);
   padding: 8px 12px;
+  min-height: 44px;
 }
 
 .settingRow__select:focus-visible {

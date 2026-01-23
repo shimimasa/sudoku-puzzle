@@ -144,6 +144,17 @@
       gap: 10px;
       margin-top: 0;
     }
+
+    .padGuide {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      color: rgba(255,255,255,0.72);
+      text-align: center;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px dashed rgba(255,255,255,0.2);
+    }
     
     .padBtn {
       padding: 14px 0;
@@ -258,6 +269,23 @@
   .helpToggle {
     padding: 8px 12px;
     font-size: 14px;
+  }
+
+  .helpTogglePrimary {
+    background: rgba(140, 200, 255, 0.22);
+    border-color: rgba(140, 200, 255, 0.45);
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(60, 120, 255, 0.12);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .helpTogglePrimary {
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+    .helpTogglePrimary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 26px rgba(60, 120, 255, 0.16);
+    }
   }
 
   .helpMenu {

@@ -19,7 +19,17 @@ function defaultState() {
       currentLevelSize: null,
       // 後でここに「盤面」「固定セル」「経過」などを追加
       inProgress: false,
-      lastPuzzleId: null
+      lastPuzzleId: null,
+      grid: null,
+      fixed: null,
+      selected: null,
+      puzzleNumbers: null,
+      puzzleId: null,
+      source: null,
+      difficulty: null,
+      hintUsedCount: 0,
+      hintSuggestUsed: false,
+      hintFillUsed: false
     }
   };
 }

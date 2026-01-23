@@ -51,7 +51,7 @@ export function renderBoard({
         },
         on: {
           click: () => {
-            if (!isFixed) onSelect(r, c);
+            onSelect(r, c, isFixed);
           }
         }
       });

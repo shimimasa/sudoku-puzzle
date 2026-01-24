@@ -16,11 +16,34 @@
 
 .card {
   width: min(520px, 92vw);
-  background: linear-gradient(180deg, var(--card2), var(--card));
+  background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  /* 盤面カード内のグラデは固定長で描画し、サイズ変化で濃淡が変わらないようにする */
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.08) 280px,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+}
+
+.card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .card.wide {

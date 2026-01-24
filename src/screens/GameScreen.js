@@ -5,6 +5,7 @@ import { renderBoard } from "../sudoku/renderer.js";
 import { renderNumberPad } from "../ui/NumberPad.js";
 import { canPlace, isCleared, computeCandidates, findHint, applyHint } from "../sudoku/engine.js";
 import { getDigitsForLevel } from "../sudoku/digits.js";
+import { getLevelDisplayLabel } from "../config.js";
 import {
   createLearningLog,
   finalizeLearningLog,
@@ -19,12 +20,31 @@ export class GameScreen {
     this.name = "game";
     this._root = null;
     this._abort = null;
+    this._timeouts = new Set();
+    this._active = false;
+    this._mountToken = 0;
   }
 
   async mount(container) {
+        this._active = true;
+        const token = ++this._mountToken;
+        const schedule = (fn, ms) => {
+          const id = setTimeout(() => {
+            this._timeouts.delete(id);
+            fn();
+          }, ms);
+          this._timeouts.add(id);
+          return id;
+        };
+        const isActive = () => this._active && this._mountToken === token && this.sm.current === this;
+
         const levelSize = Number(this.params.levelSize || 3);
         this.gs.startSession(levelSize);
         this._finalizeLog = null;
+        const reduceMotion = typeof window !== "undefined" &&
+          window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const motionDelay = (ms, reducedMs = 0) => (reduceMotion ? reducedMs : ms);
     
         const wrap = el("div", { className: "screen" });
     
@@ -41,7 +61,7 @@ export class GameScreen {
         });
         const title = el("div", {
           className: "topbarTitle",
-          text: `レベル ${levelSize}`
+          text: getLevelDisplayLabel(levelSize)
         });
         header.append(home, title, pause);
     
@@ -49,7 +69,7 @@ export class GameScreen {
         const status = el("p", { className: "sub", text: "問題をよみこみ中…" });
 
         const board = el("div", { className: "boardPlaceholder" });
-        board.appendChild(el("div", { className: "boardPlaceholderInner", text: "Loading..." }));
+        board.appendChild(el("div", { className: "boardPlaceholderInner", text: "よみこみ中…" }));
 
         const gameLayout = el("div", { className: "gameLayout" });
         const boardColumn = el("div", { className: "gameBoardColumn" });
@@ -153,10 +173,39 @@ export class GameScreen {
             guideMode: settings.guideMode,
             pencilMode: settings.pencilMode
           });
+          const mistakeCounts = new Map();
+          const helpUsedCounts = { ...logEntry.helpUsedCounts };
+          logEntry.helpUsedCounts = helpUsedCounts;
+          logEntry.resumeCount = this.params.resume && canResume ? 1 : 0;
+
+          const markFirstAction = () => {
+            if (logEntry.firstActionDelaySec == null) {
+              logEntry.firstActionDelaySec = Math.max(
+                0,
+                Math.round((Date.now() - logEntry.tsStart) / 1000)
+              );
+            }
+          };
+
+          const buildMistakeCells = () => {
+            if (!mistakeCounts.size) return {};
+            const sorted = Array.from(mistakeCounts.entries())
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5);
+            const result = {};
+            for (const [key, count] of sorted) {
+              result[key] = count;
+            }
+            return result;
+          };
 
           const finalizeLog = (result) => {
             if (logFinalized) return;
             logFinalized = true;
+            if (logEntry.firstActionDelaySec == null) {
+              logEntry.firstActionDelaySec = 0;
+            }
+            logEntry.mistakeCells = buildMistakeCells();
             const finalized = finalizeLearningLog(logEntry, { result });
             appendLearningLog(finalized);
           };
@@ -191,12 +240,13 @@ export class GameScreen {
             if (hintSoftTimer) clearTimeout(hintSoftTimer);
             if (cell) {
               // 一定時間後に“強調”を弱める（次の操作でも解除）
-              hintSoftTimer = setTimeout(() => {
+              hintSoftTimer = schedule(() => {
+                if (!isActive()) return;
                 if (hintCell && hintCell.r === cell.r && hintCell.c === cell.c) {
                   hintCell = { ...hintCell, soft: true };
                   redraw();
                 }
-              }, 2200);
+              }, motionDelay(2200, 100));
             }
           };
 
@@ -207,7 +257,8 @@ export class GameScreen {
           const flashError = (r, c) => {
             errorCell = { r, c };
             if (errorTimer) clearTimeout(errorTimer);
-            errorTimer = setTimeout(() => {
+            errorTimer = schedule(() => {
+              if (!isActive()) return;
               errorCell = null;
               redraw();
             }, 360);
@@ -245,12 +296,14 @@ export class GameScreen {
     
           const actions = el("div", { className: "gameActions" });
           const helpBar = el("div", { className: "helpBar" });
-          const helpMenu = el("div", { className: "helpMenu" });
+          const helpMenuId = "help-menu";
+          const helpMenu = el("div", { className: "helpMenu", attrs: { id: helpMenuId } });
           const helpToggle = el("button", {
             className: "btn helpToggle helpTogglePrimary",
             text: "たすけて",
             attrs: {
               type: "button",
+              "aria-controls": helpMenuId,
               "aria-expanded": "false"
             }
           });
@@ -283,10 +336,14 @@ export class GameScreen {
             setHelpLabel(hintFillBtn, "うめる", "1マスだけ進める", hintCounts.fill);
           };
 
-          const toggleHelpMenu = () => {
-            helpOpen = !helpOpen;
+          const setHelpMenuOpen = (next) => {
+            helpOpen = next;
             helpMenu.classList.toggle("isOpen", helpOpen);
             helpToggle.setAttribute("aria-expanded", helpOpen ? "true" : "false");
+          };
+
+          const toggleHelpMenu = () => {
+            setHelpMenuOpen(!helpOpen);
           };
 
           helpToggle.addEventListener("click", toggleHelpMenu);
@@ -371,6 +428,7 @@ export class GameScreen {
                                       return;
                                     }
                         
+                                    markFirstAction();
                                     if (!canPlace(grid, r, c, value)) {
                                       const now = Date.now();
                                       logEntry.invalidAttempts += 1;
@@ -429,6 +487,7 @@ export class GameScreen {
                                     hintCounts.narrow += 1;
                                     hintUsedCount += 1;
                                     logEntry.hintUsedCount = hintUsedCount;
+                                    helpUsedCounts.look += 1;
                                     setHintCell({ r: h.r, c: h.c, soft: false });
                                     showToast(wrap, "候補を見てね");
                                     const prev = this.gs.state.settings.pencilMode;
@@ -507,11 +566,20 @@ export class GameScreen {
       }
      
   unmount() {
+    this._active = false;
+    for (const id of this._timeouts) {
+      clearTimeout(id);
+    }
+    this._timeouts.clear();
     // 念のため（画面遷移後のタイマー発火でDOM触らないように）
     // ※ mount内スコープの timer はGC対象だが、保険として明示
     if (this._finalizeLog) {
       this._finalizeLog("abandoned");
       this._finalizeLog = null;
+    }
+    if (this._abort) {
+      this._abort.abort();
+      this._abort = null;
     }
     this._root = null;
   }

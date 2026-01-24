@@ -11,6 +11,7 @@ import { PauseScreen } from "./screens/PauseScreen.js";
 import { ResultScreen } from "./screens/ResultScreen.js";
 
 import { gameState } from "./state/gameState.js";
+import { initAudioManager, getAudioManager } from "./audio/AudioManager.js";
 
 function ensureRoot() {
   const root = document.getElementById("app");
@@ -20,7 +21,25 @@ function ensureRoot() {
 
 const root = ensureRoot();
 
+const applyUiDatasets = (settings) => {
+  const largeUi = settings?.largeUI ? "1" : "0";
+  document.documentElement.dataset.largeUi = largeUi;
+};
+
 const screenManager = new ScreenManager(root, gameState);
+const audioManager = initAudioManager({
+  bgmEnabled: gameState.state.settings.bgmEnabled,
+  sfxEnabled: gameState.state.settings.sfxEnabled ?? gameState.state.settings.sfx
+});
+
+applyUiDatasets(gameState.state.settings);
+
+gameState.onChange((state) => {
+  const manager = getAudioManager();
+  if (!manager) return;
+  manager.setBgmEnabled(state.settings.bgmEnabled);
+  manager.setSfxEnabled(state.settings.sfxEnabled ?? state.settings.sfx);
+});
 
 // 画面登録
 screenManager.register("title", TitleScreen);
@@ -36,3 +55,4 @@ screenManager.start("title");
 // デバッグ用（必要ならコンソールから触れる）
 window.__SM__ = screenManager;
 window.__STATE__ = gameState;
+window.__AUDIO__ = audioManager;

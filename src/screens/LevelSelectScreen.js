@@ -1,5 +1,5 @@
 import { el } from "../ui/dom.js";
-import { LEVELS, isLevelUnlocked } from "../config.js";
+import { LEVELS, getLevelDisplayLabel, isLevelUnlocked } from "../config.js";
 import { HeaderBar, Panel, LevelCard } from "../ui/components.js";
 
 export class LevelSelectScreen {
@@ -29,12 +29,20 @@ export class LevelSelectScreen {
     for (const lv of LEVELS) {
       const unlocked = isLevelUnlocked(progress, lv.size);
       const cleared = (progress.clearedLevels || []).includes(lv.size);
+      const session = this.gs.state.session;
+      const shouldResume = Boolean(
+        session?.inProgress && (session.currentLevelSize ?? lv.size) === lv.size
+      );
 
       const card = LevelCard({
-        level: lv,
+        level: { ...lv, label: getLevelDisplayLabel(lv.size) },
         unlocked,
         cleared,
-        onSelect: () => this.sm.changeScreen("game", { levelSize: lv.size })
+        onSelect: () =>
+          this.sm.changeScreen("game", {
+            levelSize: lv.size,
+            ...(shouldResume ? { resume: true } : {})
+          })
       });
       grid.appendChild(card);
     }

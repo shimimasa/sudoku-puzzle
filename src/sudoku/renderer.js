@@ -41,13 +41,27 @@ export function renderBoard({
       const isSame = !!(highlightSet && highlightSet.has(keyOf(r, c)));
       const isError = !!(error && error.r === r && error.c === c);
       const value = grid[r][c];
+      const stateLabels = [];
+      if (isError) stateLabels.push("エラー");
+      if (isSame) stateLabels.push("同じ数字");
+      if (isHintSoft) {
+        stateLabels.push("ヒント（弱め）");
+      } else if (isHint) {
+        stateLabels.push("ヒント");
+      }
+      const posLabel = `${r + 1}ぎょう${c + 1}れつ`;
+      const valueLabel = value !== 0 ? String(value) : "から";
+      const ariaLabel = stateLabels.length
+        ? `${posLabel}、${valueLabel}、${stateLabels.join("、")}`
+        : `${posLabel}、${valueLabel}`;
       const cell = el("button", {
         className: `sudokuCell ${isFixed ? "fixed" : "editable"} ${isHint ? "hint" : ""} ${
           isHintSoft ? "hintSoft" : ""
         } ${isSelected ? "isSelected" : ""} ${isSame ? "isSame" : ""} ${isError ? "isError" : ""}`,
         attrs: {
           type: "button",
-          ...(isSelected ? { "aria-current": "true" } : {})
+          ...(isSelected ? { "aria-current": "true" } : {}),
+          "aria-label": ariaLabel
         },
         on: {
           click: () => {

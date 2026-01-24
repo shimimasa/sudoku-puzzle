@@ -5,6 +5,7 @@ import { renderBoard } from "../sudoku/renderer.js";
 import { renderNumberPad } from "../ui/NumberPad.js";
 import { canPlace, isCleared, computeCandidates, findHint, applyHint } from "../sudoku/engine.js";
 import { getDigitsForLevel } from "../sudoku/digits.js";
+import { getLevelDisplayLabel } from "../config.js";
 import {
   createLearningLog,
   finalizeLearningLog,
@@ -60,7 +61,7 @@ export class GameScreen {
         });
         const title = el("div", {
           className: "topbarTitle",
-          text: `レベル ${levelSize}`
+          text: getLevelDisplayLabel(levelSize)
         });
         header.append(home, title, pause);
     
@@ -68,7 +69,7 @@ export class GameScreen {
         const status = el("p", { className: "sub", text: "問題をよみこみ中…" });
 
         const board = el("div", { className: "boardPlaceholder" });
-        board.appendChild(el("div", { className: "boardPlaceholderInner", text: "Loading..." }));
+        board.appendChild(el("div", { className: "boardPlaceholderInner", text: "よみこみ中…" }));
 
         const gameLayout = el("div", { className: "gameLayout" });
         const boardColumn = el("div", { className: "gameBoardColumn" });
@@ -290,12 +291,14 @@ export class GameScreen {
     
           const actions = el("div", { className: "gameActions" });
           const helpBar = el("div", { className: "helpBar" });
-          const helpMenu = el("div", { className: "helpMenu" });
+          const helpMenuId = "help-menu";
+          const helpMenu = el("div", { className: "helpMenu", attrs: { id: helpMenuId } });
           const helpToggle = el("button", {
             className: "btn helpToggle helpTogglePrimary",
             text: "たすけて",
             attrs: {
               type: "button",
+              "aria-controls": helpMenuId,
               "aria-expanded": "false"
             }
           });
@@ -340,13 +343,26 @@ export class GameScreen {
             hintFillBtn.textContent = hintFillUsed ? "1マスだけ埋める（使用済み）" : "1マスだけ埋める";
           };
 
-          const toggleHelpMenu = () => {
-            helpOpen = !helpOpen;
+          const setHelpMenuOpen = (next) => {
+            helpOpen = next;
             helpMenu.classList.toggle("isOpen", helpOpen);
             helpToggle.setAttribute("aria-expanded", helpOpen ? "true" : "false");
           };
 
+          const toggleHelpMenu = () => {
+            setHelpMenuOpen(!helpOpen);
+          };
+
           helpToggle.addEventListener("click", toggleHelpMenu);
+          this._abort = new AbortController();
+          document.addEventListener(
+            "keydown",
+            (event) => {
+              if (event.key !== "Escape" || !helpOpen) return;
+              setHelpMenuOpen(false);
+            },
+            { signal: this._abort.signal }
+          );
           pencilToggle.addEventListener("click", () => {
             const { pencilMode } = this.gs.state.settings;
             setPencilMode(!pencilMode);
@@ -545,6 +561,10 @@ export class GameScreen {
     if (this._finalizeLog) {
       this._finalizeLog("abandoned");
       this._finalizeLog = null;
+    }
+    if (this._abort) {
+      this._abort.abort();
+      this._abort = null;
     }
     this._root = null;
   }

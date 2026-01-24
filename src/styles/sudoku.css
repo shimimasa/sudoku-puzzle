@@ -114,23 +114,6 @@
       border-color: rgba(255, 190, 190, 0.40);
       box-shadow: 0 0 0 2px rgba(255, 200, 200, 0.12);
     }
-
-    .sudokuCell.isError::after {
-      content: "!";
-      position: absolute;
-      top: 4px;
-      right: 6px;
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      background: rgba(255, 190, 190, 0.85);
-      color: rgba(40, 10, 10, 0.85);
-      font-size: 11px;
-      font-weight: 900;
-      display: grid;
-      place-items: center;
-      box-shadow: 0 0 0 1px rgba(255, 160, 160, 0.35);
-    }
     @media (prefers-reduced-motion: no-preference) {
       .sudokuCell.isError {
         animation: cellErrorSoft 320ms ease-out 1;
@@ -401,5 +384,20 @@
   .helpItem:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  .helpChoice {
+    display: grid;
+    gap: 2px;
+  }
+
+  .helpTitle {
+    font-weight: 700;
+    font-size: 13px;
+  }
+
+  .helpDesc {
+    font-size: 11px;
+    color: rgba(255,255,255,0.72);
   }
       

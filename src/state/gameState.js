@@ -31,7 +31,12 @@ function defaultState() {
       difficulty: null,
       hintUsedCount: 0,
       hintSuggestUsed: false,
-      hintFillUsed: false
+      hintFillUsed: false,
+      hintCounts: {
+        look: 0,
+        narrow: 0,
+        fill: 0
+      }
     }
   };
 }

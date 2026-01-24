@@ -22,9 +22,20 @@
     margin: 0;
     font-family: var(--font);
     color: var(--text);
-    background: radial-gradient(1200px 700px at 20% 10%, rgba(80, 140, 255, 0.25), transparent 55%),
-                radial-gradient(900px 600px at 80% 60%, rgba(255, 180, 120, 0.18), transparent 55%),
-                var(--bg);
+    background: var(--bg);
+    position: relative;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    /* 背景は viewport 固定で描画し、画面サイズによる濃淡変化を防ぐ */
+    background:
+      radial-gradient(1200px 700px at 20% 10%, rgba(80, 140, 255, 0.25), transparent 55%),
+      radial-gradient(900px 600px at 80% 60%, rgba(255, 180, 120, 0.18), transparent 55%),
+      var(--bg);
   }
   
   button, input { font: inherit; }

@@ -21,11 +21,18 @@ function ensureRoot() {
 
 const root = ensureRoot();
 
+const applyUiDatasets = (settings) => {
+  const largeUi = settings?.largeUI ? "1" : "0";
+  document.documentElement.dataset.largeUi = largeUi;
+};
+
 const screenManager = new ScreenManager(root, gameState);
 const audioManager = initAudioManager({
   bgmEnabled: gameState.state.settings.bgmEnabled,
   sfxEnabled: gameState.state.settings.sfxEnabled ?? gameState.state.settings.sfx
 });
+
+applyUiDatasets(gameState.state.settings);
 
 gameState.onChange((state) => {
   const manager = getAudioManager();

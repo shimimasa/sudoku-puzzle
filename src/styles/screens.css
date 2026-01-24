@@ -182,8 +182,8 @@
 
 /* 盤面内ボタンのフォーカス（キーボード操作でも迷子にならない） */
 .sudokuCell:focus-visible {
-  outline: 2px solid rgba(140, 200, 255, 0.85);
-  outline-offset: 0px;
+  /* outline廃止：内側に描画して漏れを防止 */
+  box-shadow: inset 0 0 0 2px rgba(140, 200, 255, 0.85);
 }
   
 .headerBar {
